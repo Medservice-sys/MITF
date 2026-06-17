@@ -1,0 +1,25 @@
+{
+  "rated_mas_capacity": 100000000,
+  "k_thermal": 0.05,
+  "n_max_thermal": 300,
+  "lambda_decay": 0.01,
+  "weights": {
+    "critical": 0.25,
+    "info": 0.01,
+    "major": 0.18,
+    "warning": 0.08
+  },
+  "alphas": {
+    "collimator": 0.04,
+    "console": 0,
+    "cooling": 0.08,
+    "das": 0.15,
+    "gantry": 0.12,
+    "hv_generator": 0.2,
+    "obc": 0.02,
+    "rcib": 0.01,
+    "table": 0.01,
+    "tgp": 0.02,
+    "tube": 0.35
+  }
+}

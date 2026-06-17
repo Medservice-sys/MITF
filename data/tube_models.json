@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.0",
+  "metric": "mAs",
+  "alarm_thresholds": {
+    "tube_life_warning": 0.80,
+    "tube_life_critical": 0.95
+  },
+  "tube_models": [
+    {
+      "model": "MX-135 / Venus",
+      "line": "MaxiRay",
+      "insert_name": "MaxiRay 135",
+      "insert_ref": "MaxiRay 135",
+      "housing_ref_family": "MaxiRay 135",
+      "bearing": "ball",
+      "anode_heat_capacity_mhu": 3.5,
+      "max_kv": 135,
+      "eol_mas_min": 50000000,
+      "eol_mas_max": 60000000,
+      "ge_systems": ["HiSpeed CT/e", "Brivo 315", "Brivo 325", "Brivo 385"]
+    },
+    {
+      "model": "Solarix / MX165NP",
+      "line": "Solarix",
+      "insert_name": "MX165",
+      "insert_ref": "D3502T",
+      "housing_ref_family": "MX165NP",
+      "bearing": "ball",
+      "anode_heat_capacity_mhu": 3.5,
+      "max_kv": 140,
+      "eol_mas_min": 60000000,
+      "eol_mas_max": 80000000,
+      "ge_systems": ["Optima CT520", "BrightSpeed Select"]
+    },
+    {
+      "model": "Performix MX200 / Ultra",
+      "line": "Performix",
+      "insert_name": "MX200CT",
+      "insert_ref": "D3189T",
+      "housing_ref_family": "MX200",
+      "bearing": "ball",
+      "anode_heat_capacity_mhu": 6.3,
+      "max_kv": 140,
+      "eol_mas_min": 120000000,
+      "eol_mas_max": 150000000,
+      "ge_systems": ["BrightSpeed", "LightSpeed 16", "Optima CT540", "Discovery ST", "Discovery STE", "Discovery RX"]
+    },
+    {
+      "model": "Performix 40 Plus LB",
+      "line": "Performix Plus",
+      "insert_name": "MX200CT III",
+      "insert_ref": "5401074",
+      "housing_ref_family": "2137130-xx",
+      "bearing": "liquid",
+      "anode_heat_capacity_mhu": 6.3,
+      "max_kv": 140,
+      "eol_mas_min": 180000000,
+      "eol_mas_max": 250000000,
+      "ge_systems": ["Optima CT660", "Revolution EVO", "Revolution Maxima"]
+    },
+    {
+      "model": "Performix VCT 100 / MX240",
+      "line": "Performix VCT",
+      "insert_name": "MX240",
+      "insert_ref": "MX240",
+      "housing_ref_family": "MX240",
+      "bearing": "ball",
+      "anode_heat_capacity_mhu": 8.0,
+      "max_kv": 140,
+      "eol_mas_min": 150000000,
+      "eol_mas_max": 180000000,
+      "ge_systems": ["LightSpeed VCT", "Discovery VCT", "Optima 580W"]
+    },
+    {
+      "model": "Performix VCT Plus LB",
+      "line": "Performix VCT Plus",
+      "insert_name": "VCT Plus",
+      "insert_ref": "2291563",
+      "housing_ref_family": "2291563",
+      "bearing": "liquid",
+      "anode_heat_capacity_mhu": 8.0,
+      "max_kv": 140,
+      "eol_mas_min": 250000000,
+      "eol_mas_max": 300000000,
+      "ge_systems": ["Optima", "LightSpeed VCT", "Revolution"]
+    },
+    {
+      "model": "Performix Pro (Perseus)",
+      "line": "Performix Pro",
+      "insert_name": "Perseus",
+      "insert_ref": "D3703T",
+      "housing_ref_family": "Perseus",
+      "bearing": "ball",
+      "anode_heat_capacity_mhu": 8.0,
+      "max_kv": 140,
+      "eol_mas_min": 150000000,
+      "eol_mas_max": 180000000,
+      "ge_systems": ["Discovery CT750 HD"]
+    },
+    {
+      "model": "Performix HD Plus LB",
+      "line": "Performix HD Plus",
+      "insert_name": "HD Plus",
+      "insert_ref": "D3803T",
+      "housing_ref_family": "HD Plus",
+      "bearing": "liquid",
+      "anode_heat_capacity_mhu": 8.0,
+      "max_kv": 140,
+      "eol_mas_min": 250000000,
+      "eol_mas_max": 300000000,
+      "ge_systems": ["Revolution Frontier", "Revolution EVO"]
+    },
+    {
+      "model": "Quantix 160",
+      "line": "Quantix",
+      "insert_name": "Quantix",
+      "insert_ref": "D3811T",
+      "housing_ref_family": "Quantix",
+      "bearing": "liquid",
+      "anode_heat_capacity_mhu": 0.0,
+      "max_kv": 160,
+      "eol_mas_min": 0,
+      "eol_mas_max": 0,
+      "ge_systems": ["Revolution CT", "Revolution Apex"]
+    }
+  ]
+}

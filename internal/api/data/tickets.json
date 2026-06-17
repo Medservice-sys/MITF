@@ -1,0 +1,33 @@
+[
+  {
+    "id": "TK-402",
+    "title": "Falla de FAN detectada por MITF",
+    "severity": "critical",
+    "engineer": "Juan Pérez",
+    "relatedLogs": "MITF-FAN-001",
+    "status": "open",
+    "dateOpened": "2026-06-12"
+  },
+  {
+    "id": "TK-399",
+    "title": "Warning Térmico en Tubo",
+    "severity": "warning",
+    "engineer": "Carlos Mendoza",
+    "relatedLogs": "MITF-TEMP-042",
+    "status": "closed",
+    "dateOpened": "2026-06-10",
+    "dateClosed": "2026-06-11",
+    "reviewGeneral": "Revisión visual de sistema de enfriamiento.",
+    "diagnosis": "Radiador parcialmente obstruido por polvo.",
+    "tasks": [
+      {
+        "action": "Limpieza de rejillas",
+        "result": "Flujo de aire restablecido"
+      },
+      {
+        "action": "Prueba térmica",
+        "result": "Temperaturas en rango nominal (\u003c68C)"
+      }
+    ]
+  }
+]

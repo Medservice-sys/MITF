@@ -1,0 +1,22 @@
+{
+  "MITF.COOLING.FLUID_FLOW_ABORT": {
+    "code": "MITF.COOLING.FLUID_FLOW_ABORT",
+    "theory": "Aborto de escaneo por flujo de refrigerante insuficiente detectado en sensor de flujo de la unidad de enfriamiento.",
+    "practice": "Revisar si hay fugas en mangueras flexibles del gantry. Purgar aire atrapado en circuito de refrigerante y rellenar con mezcla agua/glicol al 50%."
+  },
+  "MITF.GANTRY.LOCK_ERROR": {
+    "code": "MITF.GANTRY.LOCK_ERROR",
+    "theory": "Fallo en solenoide de traba del rotor de gantry (Rotor lock failed to engage/disengage).",
+    "practice": "Desmontar conjunto solenoide, aplicar lubricante seco de teflón. Verificar switch de fin de carrera. Reemplazar bobina de solenoide si la resistencia interna está fuera de rango (nom. 24 Ohms)."
+  },
+  "MITF.GANTRY.ROTATION_SUCCESS": {
+    "code": "MITF.GANTRY.ROTATION_SUCCESS",
+    "theory": "Notificación de rotación exitosa del gantry. Valores nominales de velocidad angular (120 RPM).",
+    "practice": "Ninguna acción técnica requerida. Monitorear vibración acústica en caso de reportes de ruido por desgaste de rodamientos."
+  },
+  "MITF.TUBE.TEMP_INDEX": {
+    "code": "MITF.TUBE.TEMP_INDEX",
+    "theory": "Advertencia térmica del tubo de rayos X. La temperatura excede el umbral seguro de 68°C. El sistema activa retraso de enfriamiento.",
+    "practice": "Falla recurrente por acumulación de polvo en radiador de SRU. Limpiar rejillas de ventilación y comprobar nivel de aceite aislante. Si persiste, verificar bomba de circulación."
+  }
+}

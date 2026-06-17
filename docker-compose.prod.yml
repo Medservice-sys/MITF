@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: mitf-dashboard-prod
+    restart: unless-stopped
+    
+    # Using host network mode ensures the container can access local VM networks 
+    # (such as KVM/libvirt VM on 192.168.122.80) without bridge routing/firewall blocks.
+    # It also binds the application port (e.g. 8080) directly to the host's LAN IP.
+    network_mode: "host"
+    # ports:
+    #   - "7000:7000"
+    env_file:
+      - .env
+      
+    volumes:
+      # Persists the log-reading offsets file across container updates and restarts
+      - ./ssh_offsets.json:/app/ssh_offsets.json
+      
+    # Prevent container logs from growing indefinitely and saturating host disk
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

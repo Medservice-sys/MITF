@@ -1,0 +1,42 @@
+[
+  {
+    "id": "station_1",
+    "name": "PACS Central Clínica",
+    "aeTitle": "PACS_CENTRAL",
+    "ip": "192.168.1.100",
+    "port": 104,
+    "status": "unknown",
+    "latency": "-",
+    "lastChecked": "-"
+  },
+  {
+    "id": "station_2",
+    "name": "Estación de Trabajo 3D",
+    "aeTitle": "WORKSTATION_3D",
+    "ip": "192.168.1.105",
+    "port": 11112,
+    "status": "unknown",
+    "latency": "-",
+    "lastChecked": "-"
+  },
+  {
+    "id": "station_3",
+    "name": "Impresora DICOM Dryview",
+    "aeTitle": "DRYVIEW_PRINT",
+    "ip": "192.168.1.200",
+    "port": 5040,
+    "status": "unknown",
+    "latency": "-",
+    "lastChecked": "-"
+  },
+  {
+    "id": "station_4",
+    "name": "Tomógrafo Optima (Local)",
+    "aeTitle": "GE_CT_CONSOLE",
+    "ip": "127.0.0.1",
+    "port": 4006,
+    "status": "unknown",
+    "latency": "-",
+    "lastChecked": "-"
+  }
+]

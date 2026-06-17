@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MITF-TOM GE CT Monitor v1.2</title>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Background Animated Blobs -->
+    <div class="blob blob-primary"></div>
+    <div class="blob blob-secondary"></div>
+    <div class="blob blob-accent"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel">
+            <div class="logo-area">
+                <i data-lucide="activity" class="icon-primary"></i>
+                <h2>MITF-TOM</h2>
+                <span class="logo-version">v1.2</span>
+            </div>
+
+            <!-- Role Selector -->
+            <div class="role-selector-container" style="padding: 0 16px 12px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 12px; border-radius: 8px; font-size: 0.8rem;">
+                    <span style="color: var(--text-dim); font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="user" style="width: 14px; height: 14px; color: var(--accent);"></i> Rol:
+                    </span>
+                    <select id="user-role-select" style="background: transparent; border: none; color: var(--accent); font-weight: 600; cursor: pointer; outline: none; padding-right: 4px; font-size: 0.8rem; text-align: right;">
+                        <option value="operator" style="background: var(--bg-card); color: var(--text-main);">Operario</option>
+                        <option value="admin" style="background: var(--bg-card); color: var(--text-main);">Administrador</option>
+                    </select>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <span class="nav-category">GENERAL</span>
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="#" class="nav-item" data-view="logs">
+                    <i data-lucide="terminal"></i> Explorador Logs
+                </a>
+                <a href="#" class="nav-item" data-view="history">
+                    <i data-lucide="history"></i> Historial
+                </a>
+
+                <span class="nav-category">EQUIPO</span>
+                <a href="#" class="nav-item" data-view="hardware">
+                    <i data-lucide="cpu"></i> Hardware
+                </a>
+                <a href="#" class="nav-item" data-view="alerts">
+                    <i data-lucide="bell-ring"></i> Alertas Tempranas
+                    <span class="badge-count" id="alerts-badge"
+                        style="display: none; margin-left: auto; background: var(--critical); color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; line-height: 1;">0</span>
+                </a>
+                <a href="#" class="nav-item" data-view="dicom">
+                    <i data-lucide="network"></i> DICOM / Red
+                </a>
+                <a href="#" class="nav-item" data-view="bitacora">
+                    <i data-lucide="book-open"></i> Bitácora
+                </a>
+                <a href="#" class="nav-item" data-view="maintenance">
+                    <i data-lucide="thermometer"></i> Calentamientos
+                </a>
+                <a href="#" class="nav-item" data-view="stops">
+                    <i data-lucide="alert-octagon"></i> Fallas Agrupadas
+                </a>
+
+                <span class="nav-category">SISTEMA</span>
+                <!-- <a href="#" class="nav-item" data-view="tsm">
+                    <i data-lucide="layers"></i> Subsistemas TSM
+                </a> -->
+                <a href="#" class="nav-item" data-view="yang">
+                    <i data-lucide="git-fork"></i> Árbol YANG
+                </a>
+                <a href="#" class="nav-item" data-view="admin-classifications">
+                    <i data-lucide="shield-alert"></i> Clasificación Alertas
+                </a>
+                <a href="#" class="nav-item" data-view="settings">
+                    <i data-lucide="sliders"></i> Ajustes
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <div id="connection-dot" class="dot dot-green"></div>
+                    <span id="connection-text">Conectando SSH...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+
+            <!-- VIEW: DASHBOARD -->
+            <section id="dashboard" class="view-content active">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Panel General</h1>
+                        <p class="subtitle">Monitoreo en tiempo real - GE CT Tomograph</p>
+                    </div>
+                    <div class="header-controls">
+                        <input type="date" id="dash-date-filter" class="glass-input">
+                        <button class="icon-btn" title="Alertas"><i data-lucide="bell"></i><span
+                                class="badge"></span></button>
+                        <button class="icon-btn" id="manual-refresh" title="Actualizar"><i
+                                data-lucide="refresh-cw"></i></button>
+                        <div class="user-avatar">
+                            <span>OP</span>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- KPI Cards Grid (4 Columns) -->
+                <div class="kpi-grid">
+                    <div class="kpi-card glass-panel">
+                        <div class="kpi-icon icon-bg-info"><i data-lucide="database" style="color: var(--info);"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Total Eventos</span>
+                            <h3 id="kpi-total">0</h3>
+                        </div>
+                    </div>
+                    <div class="kpi-card glass-panel">
+                        <div class="kpi-icon icon-bg-critical"><i data-lucide="shield-alert"
+                                style="color: var(--critical);"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Críticos</span>
+                            <h3 id="kpi-critical">0</h3>
+                        </div>
+                    </div>
+                    <div class="kpi-card glass-panel">
+                        <div class="kpi-icon icon-bg-warning"><i data-lucide="alert-triangle"
+                                style="color: var(--warning);"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Advertencias</span>
+                            <h3 id="kpi-warning">0</h3>
+                        </div>
+                    </div>
+                    <div class="kpi-card glass-panel">
+                        <div class="kpi-icon icon-bg-secondary"><i data-lucide="users"
+                                style="color: var(--secondary);"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Pacientes</span>
+                            <h3 id="kpi-patients">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Health Indices (DHI, THI, FHI, ROI) -->
+                <div class="section-title">Índices Cuantitativos de Salud (MITF)</div>
+                <div class="health-grid">
+                    <div class="health-card glass-panel" style="border-top: 3px solid var(--primary);">
+                        <span class="health-label">DHI (Salud Tomógrafo)</span>
+                        <div class="health-value-wrapper">
+                            <h2 id="health-dhi" style="color: var(--primary);">0%</h2>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="bar-dhi" style="background: var(--primary); width: 0%;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="health-card glass-panel" style="border-top: 3px solid var(--secondary);">
+                        <span class="health-label">THI (Salud Tubo)</span>
+                        <div class="health-value-wrapper">
+                            <h2 id="health-thi" style="color: var(--secondary);">0%</h2>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="bar-thi"
+                                style="background: var(--secondary); width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="health-card glass-panel" style="border-top: 3px solid var(--accent);">
+                        <span class="health-label">FHI (Salud Flota)</span>
+                        <div class="health-value-wrapper">
+                            <h2 id="health-fhi" style="color: var(--accent);">0%</h2>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="bar-fhi" style="background: var(--accent); width: 0%;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="health-card glass-panel" style="border-top: 3px solid var(--info);">
+                        <span class="health-label">ROI (Ahorro Estimado)</span>
+                        <div class="health-value-wrapper">
+                            <h2 id="health-roi" style="color: var(--info);">$0.00</h2>
+                        </div>
+                        <span class="health-sub">Mantenimiento Predictivo</span>
+                    </div>
+                </div>
+
+                <!-- Charts Area -->
+                <div class="charts-layout">
+                    <div class="chart-box glass-panel full-width">
+                        <h3>Actividad en el Tiempo (Eventos por Intervalo)</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-box glass-panel">
+                        <h3>Distribución de Severidad</h3>
+                        <div class="canvas-wrapper doughnut-wrapper">
+                            <canvas id="severityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Subsystem Room Layout (Schematic) -->
+                <div class="schematic-box glass-panel">
+                    <h3>Disposición Física de Subsistemas (GE LightSpeed Room Layout)</h3>
+                    <p class="subtitle" style="font-size: 0.78rem; color: var(--text-dim); margin-bottom: 16px;">
+                        Estado de salud en tiempo real de los componentes físicos. Haz clic en un componente para
+                        filtrar el Explorador de Logs.
+                    </p>
+                    <div class="schematic-wrapper">
+                        <svg viewBox="0 0 800 320" class="room-svg">
+                            <!-- Background Room Outline (Isometric walls) -->
+                            <polygon points="50,110 400,10 750,110 750,300 400,315 50,300" fill="rgba(255,255,255,0.01)"
+                                stroke="rgba(255,255,255,0.05)" stroke-width="2" />
+                            <line x1="400" y1="10" x2="400" y2="315" stroke="rgba(255,255,255,0.05)"
+                                stroke-dasharray="4" />
+                            <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255,255,255,0.05)"
+                                stroke-dasharray="4" />
+
+                            <!-- Operator Console Room Barrier Wall -->
+                            <polygon points="50,210 280,260 280,310 50,265" fill="rgba(255,255,255,0.02)"
+                                stroke="rgba(255,255,255,0.1)" />
+
+                            <!-- 1. Operator Console (Consola del Operador) -->
+                            <g id="svg-console" class="svg-element svg-healthy" data-subsystem="console">
+                                <polygon points="80,220 180,240 160,270 60,250" />
+                                <rect x="100" y="190" width="30" height="25" rx="3" fill="rgba(255,255,255,0.05)"
+                                    stroke="rgba(255,255,255,0.2)" />
+                                <text x="120" y="260" class="svg-label" text-anchor="middle">Consola</text>
+                            </g>
+
+                            <!-- 2. PDU / Power Cabinet (IPS / Unidad de Distribución) -->
+                            <g id="svg-ips" class="svg-element svg-healthy" data-subsystem="ips">
+                                <polygon points="100,90 150,75 150,160 100,175" />
+                                <polygon points="150,75 180,85 180,170 150,160" />
+                                <polygon points="100,90 150,75 180,85 130,100" />
+                                <text x="140" y="140" class="svg-label" text-anchor="middle">IPS / PDU</text>
+                            </g>
+
+                            <!-- 3. SRU / Cooling Cabinet (SRU / Enfriamiento) -->
+                            <g id="svg-cooling" class="svg-element svg-healthy" data-subsystem="cooling">
+                                <polygon points="210,65 260,55 260,130 210,140" />
+                                <polygon points="260,55 290,62 290,138 260,130" />
+                                <polygon points="210,65 260,55 290,62 240,72" />
+                                <text x="250" y="110" class="svg-label" text-anchor="middle">Cooling (SRU)</text>
+                            </g>
+
+                            <!-- 4. Patient Table (Mesa de Paciente) -->
+                            <g id="svg-table" class="svg-element svg-healthy" data-subsystem="table">
+                                <polygon points="380,230 580,155 620,180 420,260" />
+                                <polygon points="380,230 420,260 420,280 380,250" />
+                                <polygon points="420,260 620,180 620,200 420,280" />
+                                <text x="500" y="225" class="svg-label" text-anchor="middle">Mesa</text>
+                            </g>
+
+                            <!-- 5. X-Ray Tube (Tubo de Rayos X) inside Gantry -->
+                            <g id="svg-tube" class="svg-element svg-healthy" data-subsystem="tube">
+                                <circle cx="510" cy="85" r="22" />
+                                <text x="510" y="88" class="svg-label" text-anchor="middle">Tubo RX</text>
+                            </g>
+
+                            <!-- 6. Detector Array + DAS -->
+                            <g id="svg-das" class="svg-element svg-healthy" data-subsystem="das">
+                                <path d="M 470,155 A 40,40 0 0,0 550,155 L 530,165 A 25,25 0 0,1 490,165 Z" />
+                                <text x="510" y="150" class="svg-label" text-anchor="middle">DAS / Det.</text>
+                            </g>
+
+                            <!-- 7. Gantry Ring -->
+                            <g id="svg-gantry" class="svg-element svg-healthy" data-subsystem="gantry">
+                                <ellipse cx="510" cy="120" rx="60" ry="60" fill="none" stroke-width="12" />
+                                <text x="510" y="123" class="svg-label" text-anchor="middle">Gantry</text>
+                            </g>
+
+                            <!-- 8. Collimator -->
+                            <g id="svg-collimator" class="svg-element svg-healthy" data-subsystem="collimator">
+                                <polygon points="495,105 525,105 520,115 500,115" />
+                                <text x="510" y="102" class="svg-label" text-anchor="middle"
+                                    style="font-size: 7px;">Colim.</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Recent Logs Mini-Table -->
+                <div class="table-box glass-panel">
+                    <div class="table-header">
+                        <h3>Logs Recientes (Últimos 10)</h3>
+                        <div class="search-box">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="mini-search" placeholder="Filtrar por mensaje..."
+                                class="glass-input">
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable-header desc" data-column="timestamp" data-table="mini">Timestamp
+                                    </th>
+                                    <th class="sortable-header" data-column="severity" data-table="mini">Severidad</th>
+                                    <th class="sortable-header" data-column="process" data-table="mini">Proceso</th>
+                                    <th class="sortable-header" data-column="message" data-table="mini">Mensaje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mini-logs-tbody">
+                                <tr>
+                                    <td colspan="4" class="text-center">Cargando registros...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: FULL LOGS EXPLORER -->
+            <section id="logs" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Explorador de Logs Completo</h1>
+                        <p class="subtitle">Inspección profunda de archivos GE legacy</p>
+                    </div>
+                </header>
+
+                <div class="filters-panel glass-panel">
+                    <div class="filter-group">
+                        <label>Desde</label>
+                        <input type="datetime-local" id="date-from" class="glass-input">
+                    </div>
+                    <div class="filter-group">
+                        <label>Hasta</label>
+                        <input type="datetime-local" id="date-to" class="glass-input">
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn glass-btn" id="clear-filters" style="margin-top: 24px;"><i
+                                data-lucide="x-circle"></i> Limpiar</button>
+                    </div>
+                    <div class="filter-group">
+                        <label>Buscar</label>
+                        <input type="text" id="full-log-search" class="glass-input"
+                            placeholder="Buscar texto o código...">
+                    </div>
+                    <div class="filter-group">
+                        <label>Severidad</label>
+                        <select id="filter-severity" class="glass-input">
+                            <option value="">TODAS</option>
+                            <option value="SEVERE_ERROR">CRÍTICO (SEVERE)</option>
+                            <option value="WARNING">ADVERTENCIA (WARNING)</option>
+                            <option value="INFORMATIONAL">INFORMACIÓN</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Proceso</label>
+                        <select id="filter-process" class="glass-input">
+                            <option value="">TODOS</option>
+                            <option value="scanmgr">scanmgr</option>
+                            <option value="recon">recon</option>
+                            <option value="sysstate">sysstate</option>
+                            <option value="device_eventlog">device_eventlog</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-box glass-panel margin-top">
+                    <div class="table-wrapper">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable-header desc" data-column="timestamp" data-table="full">Fecha /
+                                        Hora</th>
+                                    <th class="sortable-header" data-column="severity" data-table="full">Severidad</th>
+                                    <th class="sortable-header" data-column="subsystem" data-table="full">Subsistema
+                                    </th>
+                                    <th class="sortable-header" data-column="tceCode" data-table="full">Código TCE</th>
+                                    <th class="sortable-header" data-column="process" data-table="full">Proceso</th>
+                                    <th class="sortable-header" data-column="host" data-table="full">Host</th>
+                                    <th class="sortable-header" data-column="geCode" data-table="full">Código GE</th>
+                                    <th class="sortable-header" data-column="source" data-table="full">Archivo Fuente
+                                    </th>
+                                    <th class="sortable-header" data-column="message" data-table="full">Mensaje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="full-logs-tbody">
+                                <tr>
+                                    <td colspan="7" class="text-center">Ingrese un filtro o espere la sincronización...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination-wrapper">
+                        <span class="pagination-info" id="pagination-status">Mostrando 0-0 de 0</span>
+                        <div class="pagination-buttons">
+                            <button class="btn glass-btn" id="btn-prev"><i data-lucide="chevron-left"></i>
+                                Anterior</button>
+                            <button class="btn glass-btn" id="btn-next">Siguiente <i
+                                    data-lucide="chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: TSM SUBSYSTEMS -->
+            <section id="tsm" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Taxonomía de Subsistemas MITF (TSM)</h1>
+                        <p class="subtitle">Los 11 subsistemas identificados empíricamente de la arquitectura de CT</p>
+                    </div>
+                </header>
+
+                <div class="table-box glass-panel">
+                    <div class="table-wrapper">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>sub_id</th>
+                                    <th>Componente Físico (GE CT)</th>
+                                    <th>Canal de Telemetría</th>
+                                    <th>Ruta Canónica MITF</th>
+                                    <th>Modo de Falla Independiente</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>a</td>
+                                    <td><span class="pill pill-info">tube</span></td>
+                                    <td>Tubo de rayos X: ánodo, cátodo, carcasa, vacío, aceite dieléctrico</td>
+                                    <td>Estadísticas del generador/tubo (conteo de arcos, mAs, corriente del filamento)
+                                    </td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.tube.*</code>
+                                    </td>
+                                    <td>Acumulación de mAs, eventos de arco/chispa (serie 230023xxx), falla de rotación,
+                                        calentador o prevención de tubo frío</td>
+                                </tr>
+                                <tr>
+                                    <td>b</td>
+                                    <td><span class="pill pill-info">hv_generator</span></td>
+                                    <td>Generador de alto voltaje: suministro de bajo voltaje, inversor, tanque HV,
+                                        control kV</td>
+                                    <td>Estadísticas del generador de rayos X (kV real, mA a 5ms, estado del inversor)
+                                    </td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.hv_generator.*</code>
+                                    </td>
+                                    <td>Desviación de la regulación kV, falla del inversor, falla de alimentación del
+                                        filamento o placa de rotación</td>
+                                </tr>
+                                <tr>
+                                    <td>c</td>
+                                    <td><span class="pill pill-info">das</span></td>
+                                    <td>Sistema de Adquisición de Datos: matriz de placas conversoras (96 placas), placa
+                                        de control de datos, matriz de detectores</td>
+                                    <td>Estadísticas DAS y temperaturas de placas conversoras</td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.das.*</code>
+                                    </td>
+                                    <td>Sobrecalentamiento de la placa (paro de escaneo por encima del máximo), ruido
+                                        del canal, falla de la placa de control</td>
+                                </tr>
+                                <tr>
+                                    <td>d</td>
+                                    <td><span class="pill pill-info">gantry</span></td>
+                                    <td>Gantry mecánico: motor axial, codificador, detección de acimut, cojinetes,
+                                        balance</td>
+                                    <td>Corrientes del motor axial, estadísticas axiales, revoluciones acumuladas</td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.gantry.*</code>
+                                    </td>
+                                    <td>Anomalía en la corriente del motor, desequilibrio mecánico (artefactos de
+                                        anillo), desgaste de rodamientos</td>
+                                </tr>
+                                <tr>
+                                    <td>e</td>
+                                    <td><span class="pill pill-info">collimator</span></td>
+                                    <td>Placa de control del colimador: unidades CAM, filtros bow-tie, seguimiento del
+                                        eje Z</td>
+                                    <td>Estadísticas de apertura y filtración</td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.collimator.*</code>
+                                    </td>
+                                    <td>Desviación de posición CAM, falla de seguimiento del eje Z, desalineación del
+                                        haz (dosis y resolución)</td>
+                                </tr>
+                                <tr>
+                                    <td>f</td>
+                                    <td><span class="pill pill-info">tgp</span></td>
+                                    <td>Procesador del gantry estático: controlador de enlace en serie, canales CAN 1-3,
+                                        relés</td>
+                                    <td>Estadísticas del enlace en serie de control estático (TGP a procesador
+                                        rotacional)</td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.tgp.*</code>
+                                    </td>
+                                    <td>Errores del enlace serial a través de anillos colectores, fallas de bus CAN,
+                                        timeouts (watchdogs)</td>
+                                </tr>
+                                <tr>
+                                    <td>g</td>
+                                    <td><span class="pill pill-info">obc</span></td>
+                                    <td>Procesador rotacional a bordo: procesador rotatorio, interfaz del generador,
+                                        sinc. DAS</td>
+                                    <td>Estadísticas del enlace serial del procesador rotacional (OBC a TGP)</td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.obc.*</code>
+                                    </td>
+                                    <td>Errores de enlace en serie, falla de sincronización de adquisición DAS, fallas
+                                        de la interfaz del generador</td>
+                                </tr>
+                                <tr>
+                                    <td>h</td>
+                                    <td><span class="pill pill-info">rcib</span></td>
+                                    <td>Placa de interfaz CAN rotativa: Bus CAN entre DAS, placa de control y procesador
+                                        rotacional</td>
+                                    <td>Estadísticas del bus CAN rotacional</td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.rcib.*</code>
+                                    </td>
+                                    <td>Errores de paquetes CAN, NACKs, eventos bus-off independientes de la lógica
+                                        rotacional</td>
+                                </tr>
+                                <tr>
+                                    <td>i</td>
+                                    <td><span class="pill pill-info">table</span></td>
+                                    <td>Control de mesa para el paciente: motor, codificador lineal, sensores de
+                                        posición</td>
+                                    <td>Estadísticas de la cuna (Cradle)</td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.table.*</code>
+                                    </td>
+                                    <td>Falla de posición de la cuna (serie 260134xxx), movimiento no ordenado
+                                        (seguridad crítica)</td>
+                                </tr>
+                                <tr>
+                                    <td>j</td>
+                                    <td><span class="pill pill-info">cooling</span></td>
+                                    <td>Gestión térmica: sistema de ventiladores, sensores térmicos (T40/T70),
+                                        calentadores</td>
+                                    <td>Temperaturas de zonas del gantry y del detector</td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.cooling.*</code>
+                                    </td>
+                                    <td>Falla del ventilador que lleva al sobrecalentamiento de la placa DAS (detiene el
+                                        escaneo)</td>
+                                </tr>
+                                <tr>
+                                    <td>k</td>
+                                    <td><span class="pill pill-info">console</span></td>
+                                    <td>Estación de adquisición de trabajo: tarjeta de interfaz de datos, GPU, RAID,
+                                        fibra óptica</td>
+                                    <td>Estadísticas de la interfaz de datos (BER slipring, correcciones FEC)</td>
+                                    <td><code
+                                            style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px; font-size: 0.85em;">...subsystem.console.*</code>
+                                    </td>
+                                    <td>Degradación de BER del anillo colector, saturación FEC, falla de RAID, errores
+                                        DICOM</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: YANG TREE -->
+            <section id="yang" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Árbol de Configuración YANG</h1>
+                        <p class="subtitle">Modelo jerárquico del tomógrafo GE</p>
+                    </div>
+                </header>
+
+                <div class="tree-box glass-panel">
+                    <div class="tree-actions">
+                        <button class="btn glass-btn" id="tree-expand-all"><i data-lucide="plus-circle"></i> Expandir
+                            Todo</button>
+                        <button class="btn glass-btn" id="tree-collapse-all"><i data-lucide="minus-circle"></i> Contraer
+                            Todo</button>
+                    </div>
+                    <div id="yang-tree-root" class="yang-tree-container">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: HARDWARE -->
+            <section id="hardware" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Monitoreo de Hardware</h1>
+                        <p class="subtitle">Estado físico del tubo y subsistemas</p>
+                    </div>
+                </header>
+
+                <div class="hardware-grid">
+                    <div class="hw-card glass-panel">
+                        <h3>Carga del Tubo (mAs Acumulado)</h3>
+                        <div class="hw-progress-wrapper">
+                            <div class="hw-bar-bg">
+                                <div id="hw-mas-fill" class="hw-bar-fill"
+                                    style="width: 0%; background: linear-gradient(90deg, var(--info), var(--primary));">
+                                </div>
+                            </div>
+                            <span id="hw-mas-val" class="hw-val">0 / 600,000 mAs (0%)</span>
+                        </div>
+                        <p class="hw-desc" style="margin-bottom: 8px;">La carga del tubo está en nivel óptimo de acumulación de dosis.</p>
+                        <div id="hw-tube-details" style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; display: flex; flex-direction: column; gap: 4px;">
+                            <div><strong>Modelo Detectado:</strong> <span id="hw-tube-model-val" style="color: var(--accent);">Auto-detectando...</span></div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span>Cojinete: <span id="hw-tube-bearing-val" style="color: var(--text-main);">-</span></span>
+                                <span>Capacidad: <span id="hw-tube-capacity-val" style="color: var(--text-main);">-</span></span>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-dim);">
+                                REF Inserto: <span id="hw-tube-insert-val">-</span> | REF Housing: <span id="hw-tube-housing-val">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hw-card glass-panel">
+                        <h3>Rotaciones del Gantry</h3>
+                        <div class="hw-progress-wrapper">
+                            <div class="hw-bar-bg">
+                                <div id="hw-revs-fill" class="hw-bar-fill"
+                                    style="width: 0%; background: linear-gradient(90deg, var(--secondary), var(--primary));">
+                                </div>
+                            </div>
+                            <span id="hw-revs-val" class="hw-val">0 Rotaciones</span>
+                        </div>
+                        <p id="hw-revs-desc" class="hw-desc">Próximo servicio mecánico recomendado a las 100,000 rotaciones.</p>
+                    </div>
+                    <div class="hw-card glass-panel">
+                        <h3>Calentamiento del Filamento</h3>
+                        <div class="hw-progress-wrapper">
+                            <div class="hw-bar-bg">
+                                <div id="hw-temp-fill" class="hw-bar-fill"
+                                    style="width: 0%; background: linear-gradient(90deg, var(--warning), var(--critical));">
+                                </div>
+                            </div>
+                            <span id="hw-temp-val" class="hw-val">0 °C (Filamento)</span>
+                        </div>
+                        <p class="hw-desc">Temperatura interna del tubo dentro de límites normales de operación.</p>
+                    </div>
+                </div>
+
+                <!-- PANEL DE ADMINISTRADOR PARA CONFIGURAR EL TUBO (DESGASTE Y CAPACIDAD CALORÍFICA) -->
+                <div id="admin-tube-settings-panel" class="admin-only glass-panel margin-top" style="margin-top: 24px; padding: 24px; display: none;">
+                    <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; color: var(--text-main);">
+                        <i data-lucide="settings" style="color: var(--accent); width: 20px; height: 20px;"></i>
+                        Parámetros de Desgaste y Capacidad Calorífica del Tubo
+                    </h3>
+                    <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; line-height: 1.4;">
+                        Ajuste las variables y límites de diseño según el modelo de tubo instalado en el tomógrafo (capacidad de dosis y desgaste térmico).
+                    </p>
+                    <form id="form-admin-tube-kpi" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: end;">
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1;">
+                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Modelo de Tubo Instalado (GE CT Tube)</label>
+                            <select id="admin-hw-tube-model" class="glass-input" style="height: 38px; background-color: rgba(20,24,35,0.85); color: var(--text-main); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 12px; cursor: pointer;">
+                                <option value="auto">Selección Automática (Auto-detectar desde Logs)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Capacidad de Dosis del Tubo (mAs Máximo)</label>
+                            <input type="number" id="admin-hw-mas-capacity" class="glass-input" required>
+                        </div>
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Capacidad Térmica Máxima (Filamento)</label>
+                            <input type="number" id="admin-hw-max-thermal" class="glass-input" required>
+                        </div>
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Constante de Disipación Térmica (k_thermal)</label>
+                            <input type="number" step="0.001" id="admin-hw-k-thermal" class="glass-input" required>
+                        </div>
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Límite de Rotaciones Recomendadas</label>
+                            <input type="number" id="admin-hw-max-revs" class="glass-input" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer;">
+                            <i data-lucide="save" style="width: 16px; height: 16px;"></i> Guardar Parámetros
+                        </button>
+                    </form>
+                </div>
+
+                <div class="table-box glass-panel margin-top" style="margin-top: 24px;">
+                    <div class="table-header">
+                        <h3>Logs de Telemetría Física & Adquisición (Hardware)</h3>
+                        <div class="search-box">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="hardware-search" placeholder="Filtrar por mensaje..."
+                                class="glass-input">
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable-header desc" data-column="timestamp" data-table="hardware">
+                                        Timestamp</th>
+                                    <th class="sortable-header" data-column="subsystem" data-table="hardware">
+                                        Subcomponente</th>
+                                    <th class="sortable-header" data-column="severity" data-table="hardware">Severidad
+                                    </th>
+                                    <th class="sortable-header" data-column="tceCode" data-table="hardware">Código TCE
+                                    </th>
+                                    <th class="sortable-header" data-column="message" data-table="hardware">Mensaje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hardware-tbody">
+                                <tr>
+                                    <td colspan="5" class="text-center">Cargando eventos de hardware...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: ALERTS -->
+            <section id="alerts" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Alertas Tempranas & Predicciones</h1>
+                        <p class="subtitle">Detección de anomalías en subsistemas MITF</p>
+                    </div>
+                </header>
+
+                <div class="alerts-grid" id="alerts-container">
+                    <div class="text-center padding-all" style="grid-column: 1 / -1;">
+                        <p class="text-secondary">Cargando alertas en tiempo real...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: DICOM -->
+            <section id="dicom" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>DICOM / Conectividad de Red</h1>
+                        <p class="subtitle">Prueba C-ECHO Ping y administración de nodos de imagenología en la intranet
+                            LAN</p>
+                    </div>
+                </header>
+
+                <div class="dicom-grid">
+                    <!-- Left: Configuration Checklist and Ping triggers -->
+                    <div class="dicom-table-box glass-panel">
+                        <div class="table-header">
+                            <h3>Estaciones DICOM / Conectores de Red</h3>
+                            <button id="btn-ping-all" class="btn glass-btn"
+                                style="padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+                                <i data-lucide="play" style="width: 14px; height: 14px;"></i> Probar Todos
+                            </button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="glass-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre Nodo</th>
+                                        <th>AE Title</th>
+                                        <th>Dirección IP:Puerto</th>
+                                        <th>Estado DICOM</th>
+                                        <th>Latencia C-ECHO</th>
+                                        <th>Último Chequeo</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dicom-stations-tbody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Cargando nodos...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quick Register Station Form -->
+                    <div class="dicom-form-box glass-panel">
+                        <h3>Registrar Nodo de Red</h3>
+                        <form id="dicom-station-form" style="margin-top: 16px;">
+                            <div class="form-group">
+                                <label for="dicom-name">Nombre de Estación</label>
+                                <input type="text" id="dicom-name" class="glass-input" placeholder="Ej. PACS Central"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dicom-aetitle">Calling/Called AE Title</label>
+                                <input type="text" id="dicom-aetitle" class="glass-input" placeholder="Ej. PACS_CLINIC"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dicom-ip">Dirección IP</label>
+                                <input type="text" id="dicom-ip" class="glass-input" placeholder="Ej. 192.168.1.50"
+                                    required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dicom-port">Puerto DICOM</label>
+                                <input type="number" id="dicom-port" class="glass-input" placeholder="Ej. 104" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">
+                                Registrar Estación
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Bottom: Live Network Transfer Logs -->
+                <div class="table-box glass-panel margin-top" style="margin-top: 24px;">
+                    <div class="table-header">
+                        <h3>Eventos de Transferencia PACS / Red (Logs de Telemetría)</h3>
+                        <div class="search-box">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="dicom-search" placeholder="Filtrar por mensaje..."
+                                class="glass-input">
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable-header desc" data-column="timestamp" data-table="dicom">
+                                        Timestamp</th>
+                                    <th class="sortable-header" data-column="severity" data-table="dicom">Severidad</th>
+                                    <th class="sortable-header" data-column="subsystem" data-table="dicom">Subsistema
+                                    </th>
+                                    <th class="sortable-header" data-column="tceCode" data-table="dicom">Código TCE</th>
+                                    <th class="sortable-header" data-column="message" data-table="dicom">Mensaje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dicom-tbody">
+                                <tr>
+                                    <td colspan="5" class="text-center">Cargando registros...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: CALENTAMIENTOS -->
+            <section id="maintenance" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Calentamientos & Temperatura</h1>
+                        <p class="subtitle">Historial térmico y ventilación del tubo de Rayos X</p>
+                    </div>
+                </header>
+                <div class="table-box glass-panel">
+                    <div class="table-header">
+                        <h3>Eventos Térmicos del Tubo</h3>
+                        <div class="search-box">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="maintenance-search" placeholder="Filtrar por mensaje..."
+                                class="glass-input">
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable-header desc" data-column="timestamp" data-table="maintenance">
+                                        Timestamp</th>
+                                    <th class="sortable-header" data-column="severity" data-table="maintenance">
+                                        Severidad</th>
+                                    <th class="sortable-header" data-column="tceCode" data-table="maintenance">Código
+                                        TCE</th>
+                                    <th class="sortable-header" data-column="message" data-table="maintenance">Mensaje
+                                        de Error / Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maintenance-tbody">
+                                <tr>
+                                    <td colspan="4" class="text-center">Cargando eventos térmicos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: FALLAS AGRUPADAS -->
+            <section id="stops" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Fallas Agrupadas & Abortos</h1>
+                        <p class="subtitle">Escaneos abortados o fallas críticas en scanmgr</p>
+                    </div>
+                </header>
+                <div class="table-box glass-panel">
+                    <div class="table-header">
+                        <h3>Secuencias Anómalas Detenidas por Día</h3>
+                        <div class="search-box">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="stops-search" placeholder="Filtrar por fecha..." class="glass-input">
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable-header desc" data-column="date" data-table="stops">Fecha</th>
+                                    <th class="sortable-header" data-column="count" data-table="stops">Cantidad de
+                                        Abortos / Fallas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stops-tbody">
+                                <tr>
+                                    <td colspan="2" class="text-center">Cargando fallas agrupadas...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: BITACORA -->
+            <section id="bitacora" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Gestión de Tickets y Bitácora en Sitio</h1>
+                        <p class="subtitle">Flujo de trabajo para fallas críticas/mayores: asignación, revisión general
+                            y diagnóstico de campo</p>
+                    </div>
+                </header>
+
+                <div class="bitacora-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <!-- 1. Operator: Create/Assign Ticket -->
+                    <div class="maint-form-box glass-panel">
+                        <h3>1. Operador: Abrir y Asignar Ticket</h3>
+                        <form id="ticket-form" style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
+                            
+                            <!-- ATREC Integration Enrichment (Visible/Populated when linked to an alarm) -->
+                            <div id="atrec-enrichment-panel" class="hidden" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 12px; border-radius: 8px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                                    <span style="font-size: 0.75rem; color: var(--accent); font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                                        <i data-lucide="link" style="width: 12px; height: 12px;"></i> Vinculado a Alarma: <span id="lbl-linked-alarm-id" style="font-family: monospace;">#A-1024</span>
+                                    </span>
+                                    <button type="button" id="btn-unlink-alarm" style="background: none; border: none; color: var(--danger); font-size: 11px; cursor: pointer;">Desvincular</button>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.75rem;">
+                                    <div>
+                                        <span style="color: var(--text-dim);">Tipo Canónico:</span>
+                                        <div id="val-canonical-type" style="font-weight: 500; color: var(--text-main);">-</div>
+                                    </div>
+                                    <div>
+                                        <span style="color: var(--text-dim);">Elemento de Red:</span>
+                                        <div id="val-network-element" style="font-weight: 500; color: var(--text-main);">-</div>
+                                    </div>
+                                    <div>
+                                        <span style="color: var(--text-dim);">Servicio Afectado:</span>
+                                        <div id="val-affected-service" style="font-weight: 500; color: var(--text-main); font-style: italic;">-</div>
+                                    </div>
+                                    <div>
+                                        <span style="color: var(--text-dim);">Severidad Alarma:</span>
+                                        <div id="val-alarm-severity" style="font-weight: 500; color: var(--text-main);">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ticket-title">Falla Detectada (Asunto)</label>
+                                <input type="text" id="ticket-title" class="glass-input"
+                                    placeholder="Ej. Falla de FAN detectada por MITF" required>
+                            </div>
+                            <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div>
+                                    <label for="ticket-severity">Severidad</label>
+                                    <select id="ticket-severity" class="glass-input" required>
+                                        <option value="critical">Crítica</option>
+                                        <option value="major">Mayor</option>
+                                        <option value="warning">Warning</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="ticket-engineer">Ingeniero / Operador Asignado</label>
+                                    <input type="text" id="ticket-engineer" class="glass-input"
+                                        placeholder="Nombre completo" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div>
+                                    <label for="ticket-priority">Prioridad Asignada</label>
+                                    <select id="ticket-priority" class="glass-input">
+                                        <option value="1">P1 - Crítico (Afectación total)</option>
+                                        <option value="2">P2 - Mayor (Afectación parcial)</option>
+                                        <option value="3">P3 - Menor (Sin afectación)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="ticket-group">Grupo de Escalación (NOC)</label>
+                                    <select id="ticket-group" class="glass-input">
+                                        <option value="grp.noc-transporte">NOC Transporte (Enlaces, Fibra)</option>
+                                        <option value="grp.noc-datos">NOC Datos e Internet (IP, Core)</option>
+                                        <option value="grp.infra-sitio">Infraestructura de Sitio</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ticket-note">Nota de Diagnóstico Inicial (Operador)</label>
+                                <textarea id="ticket-note" class="glass-input" style="height: 60px; resize: vertical;" placeholder="Detalles de la falla, span de potencia, recomendaciones de reparación..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ticket-logs">Logs/Eventos Relacionados</label>
+                                <input type="text" id="ticket-logs" class="glass-input"
+                                    placeholder="Ej. LOG-102, EVENT-405">
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 6px;">
+                                Abrir y Asignar Ticket ATREC
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- 2. Engineer: Assigned Tickets & Reports -->
+                    <div class="maint-list-box glass-panel" style="display: flex; flex-direction: column;">
+                        <div class="table-header">
+                            <h3>2. Ingeniero: Tickets Asignados & Histórico</h3>
+                        </div>
+                        <div class="maint-timeline" id="tickets-timeline-container" style="flex: 1; overflow-y: auto; padding-right: 10px;">
+                            <!-- Cargado dinámicamente desde el backend -->
+                            <p style="text-align: center; color: var(--text-dim); margin-top: 20px;">Cargando tickets...</p>
+                        </div>
+                    </div>
+
+                    <!-- 3 & 4. Engineer: Resolution Panel -->
+                    <div class="glass-panel hidden" id="ticket-resolution-panel"
+                        style="grid-column: 1 / -1; border-top: 3px solid var(--primary);">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 id="resolution-panel-title">3. En Sitio: Resolución y Bitácora</h3>
+                            <button type="button" class="btn glass-btn"
+                                onclick="document.getElementById('ticket-resolution-panel').classList.add('hidden')">Cerrar
+                                Panel</button>
+                        </div>
+
+                        <form id="resolution-form">
+                            <!-- ATREC clearing proposal -->
+                            <div id="resolution-clearing-proposal" class="hidden" style="background: rgba(0, 230, 115, 0.1); border: 1px solid rgba(0, 230, 115, 0.3); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="font-size: 0.8rem; color: #00e673; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                                        <i data-lucide="check-circle" style="width: 14px; height: 14px; color: #00e673;"></i> ¡Alarma de origen despejada (Cleared)!
+                                    </span>
+                                    <button type="button" id="btn-resolve-proposed" class="btn btn-secondary glass-btn" style="padding: 4px 8px; font-size: 11px; color: #00e673; border-color: rgba(0, 230, 115, 0.4); background: rgba(0, 230, 115, 0.05);">
+                                        Proponer Resuelto
+                                    </button>
+                                </div>
+                                <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 6px; margin-bottom: 0;">
+                                    La alarma vinculada <span id="proposal-alarm-id" style="font-family: monospace; font-weight: bold; color: var(--text-main);"></span> ya no está activa en la consola. Se propone marcar este ticket como "Resuelto (Pendiente de Validación)".
+                                </p>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px;">
+                                <div class="form-group">
+                                    <label for="review-general">Revisión General en Sitio</label>
+                                    <textarea id="review-general" class="glass-input"
+                                        style="height: 100px; resize: vertical;"
+                                        placeholder="Describa el estado visual, condiciones ambientales al llegar al sitio..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="diagnosis">Diagnóstico de Falla</label>
+                                    <textarea id="diagnosis" class="glass-input"
+                                        style="height: 100px; resize: vertical;"
+                                        placeholder="Detalle la causa raíz identificada tras la revisión..."></textarea>
+                                </div>
+                            </div>
+
+                            <h4>4. Tareas Realizadas (Paso a Paso)</h4>
+                            <div id="tasks-container"
+                                style="margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+                                <!-- Cargado dinámicamente por JS -->
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <button type="button" id="btn-add-task" class="btn glass-btn">
+                                    <i data-lucide="plus-circle"
+                                        style="width: 16px; height: 16px; margin-right: 6px;"></i> Añadir Tarea
+                                </button>
+
+                                <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">
+                                    Guardar Bitácora y Cerrar Ticket
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: CLASIFICACIÓN ALERTAS -->
+            <section id="admin-classifications" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Clasificación & Filtro de Alarmas</h1>
+                        <p class="subtitle">Defina los niveles de severidad de los eventos del tomógrafo o escártelos
+                            del monitoreo activo</p>
+                    </div>
+                </header>
+
+                <div class="classifications-grid" style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
+                    <!-- FORM: AGREGAR NUEVO AL CATALOGO -->
+                    <div class="admin-card glass-panel" style="padding: 24px;">
+                        <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; color: var(--text-main);">
+                            <i data-lucide="plus-circle" style="color: var(--accent); width: 20px; height: 20px;"></i>
+                            Registrar Nuevo Evento
+                        </h3>
+                        <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; line-height: 1.4;">
+                            Agregue nuevos códigos de alarma y severidades por defecto aprendidos de nuevos equipos.
+                        </p>
+                        <form id="form-add-catalog" style="display: flex; flex-direction: column; gap: 16px;">
+                            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                <label for="catalog-code" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Código de Alarma (TCE Code)</label>
+                                <input type="text" id="catalog-code" placeholder="Ej: MITF.RESONATOR.HE_LOW" required class="glass-input" style="width: 100%;">
+                            </div>
+                            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                <label for="catalog-label" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Nombre / Etiqueta del Evento</label>
+                                <input type="text" id="catalog-label" placeholder="Ej: Nivel helio por debajo de 60%" required class="glass-input" style="width: 100%;">
+                            </div>
+                            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                <label for="catalog-subsystem" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Subsistema Asociado</label>
+                                <select id="catalog-subsystem" required class="glass-input" style="width: 100%; background: var(--bg-card); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    <option value="tube">Tubo (TUBE)</option>
+                                    <option value="hv_generator">Generador (HV_GENERATOR)</option>
+                                    <option value="das">Adquisición (DAS)</option>
+                                    <option value="gantry">Gantry (GANTRY)</option>
+                                    <option value="collimator">Colimador (COLLIMATOR)</option>
+                                    <option value="tgp">TGP (TGP)</option>
+                                    <option value="obc">Reconstrucción (OBC)</option>
+                                    <option value="rcib">Control (RCIB)</option>
+                                    <option value="table">Mesa de Paciente (TABLE)</option>
+                                    <option value="cooling">Enfriamiento (COOLING)</option>
+                                    <option value="console">Consola (CONSOLE)</option>
+                                    <option value="resonator">Resonador (RESONATOR)</option>
+                                    <option value="magnet">Imán / Criogenia (MAGNET)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                <label for="catalog-severity" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Severidad por Defecto</label>
+                                <select id="catalog-severity" required class="glass-input" style="width: 100%; background: var(--bg-card); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    <option value="CRITICAL">CRITICAL</option>
+                                    <option value="WARNING">WARNING</option>
+                                    <option value="INFO">INFO</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                <label for="catalog-desc" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Descripción / Guía Diagnóstica</label>
+                                <textarea id="catalog-desc" placeholder="Detalles o sugerencias de reparación..." required class="glass-input" style="width: 100%; min-height: 80px; resize: vertical;"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="margin-top: 8px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i data-lucide="plus"></i> Registrar Evento
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- CARD TABLE: EXISTING CODES -->
+                    <div class="admin-card glass-panel" style="margin-top: 0;">
+                        <div class="table-header">
+                            <h3>Tabla de Reglas de Filtrado y Clasificación</h3>
+                            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                <div class="search-box">
+                                    <i data-lucide="search"></i>
+                                    <input type="text" id="classification-search" placeholder="Filtrar códigos..." class="glass-input">
+                                </div>
+                                <button id="btn-save-classifications" class="btn btn-primary">
+                                    Aplicar Reglas de Alertas
+                                </button>
+                            </div>
+                        </div>
+                        <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px;">
+                            Las alarmas configuradas como <strong>IGNORE</strong> no se contarán en las métricas de fallas ni en la lista de logs, permitiendo reducir drásticamente el ruido del sistema.
+                        </p>
+                        <div class="table-wrapper">
+                            <table class="glass-table classification-table">
+                                <thead>
+                                    <tr>
+                                        <th>Código / Descripción</th>
+                                        <th>Subsistema</th>
+                                        <th>Estado / Base</th>
+                                        <th>Nivel Actual</th>
+                                        <th>Acción de Reclasificación</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="classifications-tbody">
+                                    <tr>
+                                        <td colspan="5" class="text-center">Cargando configuración de alarmas...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HEALTH MODELING CONFIGURATION & VALIDATOR -->
+                <div class="admin-card glass-panel" style="margin-top: 24px; padding: 24px;">
+                    <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; color: var(--text-main);">
+                        <i data-lucide="activity" style="color: var(--accent); width: 20px; height: 20px;"></i>
+                        Health Modeling Framework & Bounded Formulations
+                    </h3>
+                    <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; line-height: 1.4;">
+                        Configure las constantes, severidades y pesos de criticidad de los subsistemas, y valide los cálculos matemáticos en tiempo real.
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; align-items: start;">
+                        <!-- CONFIGURATION FORM -->
+                        <form id="form-health-config" style="display: flex; flex-direction: column; gap: 16px; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 12px;">
+                            <h4 style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px;">Parámetros del Algoritmo</h4>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">rated_mAs_capacity</label>
+                                    <input type="number" id="cfg-mas-capacity" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">k_thermal</label>
+                                    <input type="number" step="0.001" id="cfg-k-thermal" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">n_max_thermal</label>
+                                    <input type="number" id="cfg-max-thermal" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">lambda_decay (1/hr)</label>
+                                    <input type="number" step="0.0001" id="cfg-lambda-decay" class="glass-input" required>
+                                </div>
+                            </div>
+
+                            <h4 style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px; margin-top: 10px;">Pesos de Gravedad de Eventos (w_i)</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">CRITICAL</label>
+                                    <input type="number" step="0.01" id="cfg-weight-critical" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">MAJOR_ERROR</label>
+                                    <input type="number" step="0.01" id="cfg-weight-major" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">WARNING</label>
+                                    <input type="number" step="0.01" id="cfg-weight-warning" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">INFO</label>
+                                    <input type="number" step="0.01" id="cfg-weight-info" class="glass-input" required>
+                                </div>
+                            </div>
+
+                            <h4 style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px; margin-top: 10px;">Pesos de Criticidad del Subsistema (alpha_s)</h4>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">Tubo</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-tube" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">Generador</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-generator" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">DAS</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-das" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">Gantry</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-gantry" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">Enfriamiento</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-cooling" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">Colimador</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-collimator" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">TGP</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-tgp" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">OBC</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-obc" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">RCIB</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-rcib" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">Mesa</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-table" class="glass-input" required>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">Consola</label>
+                                    <input type="number" step="0.01" id="cfg-alpha-console" class="glass-input" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="margin-top: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                <i data-lucide="save"></i> Guardar Parámetros de Salud
+                            </button>
+                        </form>
+
+                        <!-- REALTIME VALIDATOR / SANDBOX -->
+                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; height: 100%; display: flex; flex-direction: column; gap: 16px;">
+                            <h4 style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px;">Validador Matemático (Sandbox en Tiempo Real)</h4>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.5; color: var(--text-main);">
+                                <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+                                    <strong style="color: #ff8c00;">1. Tube Health Index (THI)</strong>
+                                    <div style="margin-top: 6px; font-size: 0.72rem; color: var(--text-dim); line-height: 1.3;">
+                                        THI_base = max(0, min(1, 1 - (mAs_acumulado / capacity)))<br>
+                                        THI = max(0, min(1, THI_base * (1 - k_thermal * N_thermal / N_max_thermal)))
+                                    </div>
+                                    <div id="validator-thi-math" style="margin-top: 8px; color: #8cc6ff; white-space: pre-wrap; word-break: break-all;">
+                                        Calculando...
+                                    </div>
+                                </div>
+
+                                <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+                                    <strong style="color: #ff8c00;">2. Subsystem Health Index (SHI)</strong>
+                                    <div style="margin-top: 6px; font-size: 0.72rem; color: var(--text-dim); line-height: 1.3;">
+                                        SHI_s = max(0, 100 * (1 - min(1, Σ (w_i * e^(-λ * δt_i)))))
+                                    </div>
+                                    <div id="validator-shi-math" style="margin-top: 8px; color: #8cc6ff; max-height: 160px; overflow-y: auto; white-space: pre-wrap; font-size: 0.75rem;">
+                                        Calculando...
+                                    </div>
+                                </div>
+
+                                <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+                                    <strong style="color: #ff8c00;">3. Device Health Index (DHI)</strong>
+                                    <div style="margin-top: 6px; font-size: 0.72rem; color: var(--text-dim); line-height: 1.3;">
+                                        DHI = Σ (alpha_s * SHI_s) / Σ alpha_s
+                                    </div>
+                                    <div id="validator-dhi-math" style="margin-top: 8px; color: #8cc6ff; white-space: pre-wrap;">
+                                        Calculando...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: SETTINGS -->
+            <section id="settings" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Ajustes del Sistema</h1>
+                        <p class="subtitle">Parámetros del colector y límites de visualización</p>
+                    </div>
+                </header>
+
+                <div class="settings-box glass-panel">
+                    <form id="settings-form">
+                        <div class="form-group">
+                            <label>Intervalo de Refresco (Segundos)</label>
+                            <input type="number" class="glass-input" value="15" min="5" max="300" id="setting-refresh">
+                        </div>
+                        <div class="form-group">
+                            <label>Modo de Operación / Sondeo</label>
+                            <select id="setting-opmode" class="glass-input">
+                                <option value="online">Modo en Línea (Lectura directa GE)</option>
+                                <option value="service">Modo Servicio (Lectura multimarca Philips/Siemens/GE Avanzado)
+                                </option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Directorio Remoto de Logs</label>
+                            <input type="text" class="glass-input" value="/usr/g/service/log" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>Dirección IP del Tomógrafo</label>
+                            <input type="text" class="glass-input" value="10.1.3.107:22" disabled>
+                        </div>
+                        <button type="submit" class="btn glass-btn font-ui">Guardar Cambios</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- VIEW: HISTORY -->
+            <section id="history" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Historial de Eventos</h1>
+                        <p class="subtitle">Sesión histórica y auditoría de eventos de telemetría</p>
+                    </div>
+                </header>
+
+                <div class="table-box glass-panel">
+                    <div class="table-header">
+                        <h3>Registro Completo de Eventos Procesados</h3>
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <div class="date-select-box" style="position: relative;">
+                                <select id="history-date-select" class="glass-input"
+                                    style="padding-right: 32px; appearance: none; -webkit-appearance: none; background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; height: 38px; cursor: pointer;">
+                                    <option value="all">Todos los días</option>
+                                </select>
+                                <i data-lucide="chevron-down"
+                                    style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; width: 16px; height: 16px; opacity: 0.7;"></i>
+                            </div>
+                            <div class="search-box">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="history-search" placeholder="Filtrar historial..."
+                                    class="glass-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="history-loading" class="text-center padding-all">
+                        <div class="spinner"></div>
+                        <p class="margin-top text-secondary" style="margin-top: 12px;">Cargando historial de eventos
+                            desde el tomógrafo...</p>
+                    </div>
+
+                    <div id="history-error" class="text-center padding-all hidden">
+                        <i data-lucide="alert-octagon" class="text-critical"
+                            style="width: 48px; height: 48px; color: var(--critical);"></i>
+                        <p class="margin-top text-critical" style="margin-top: 12px; color: var(--critical);">No se pudo
+                            establecer conexión con el backend de monitoreo.</p>
+                        <button class="btn glass-btn margin-top" onclick="loadHistoryData()"
+                            style="margin-top: 16px;">Reintentar</button>
+                    </div>
+
+                    <div id="history-empty" class="text-center padding-all hidden">
+                        <i data-lucide="inbox" class="text-secondary"
+                            style="width: 48px; height: 48px; color: var(--text-dim);"></i>
+                        <p class="margin-top text-secondary" style="margin-top: 12px;">No hay logs registrados en el
+                            historial de esta sesión.</p>
+                    </div>
+
+                    <div id="history-content" class="hidden">
+                        <!-- Creado dinámicamente por JS -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Progress Auto-Refresh Ring Bubble -->
+        <div class="refresh-bubble glass-panel" title="Auto-Refresco">
+            <svg viewBox="0 0 36 36" class="circular-chart">
+                <path class="circle-bg"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="circle" id="refresh-ring" stroke-dasharray="100, 100"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <i data-lucide="refresh-cw" class="refresh-icon"></i>
+        </div>
+        <!-- MODAL: AYUDA TÉCNICA / EXPERIENCIA DE FALLAS -->
+        <div id="help-modal" class="modal hidden">
+            <div class="modal-content glass-panel">
+                <div class="modal-header">
+                    <h3 id="modal-error-title">Ayuda del Sistema - Código: MITF.TUBE.TEMP_INDEX</h3>
+                    <button class="close-btn" id="close-help-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="help-section">
+                        <h4><i data-lucide="book"></i> Manual de Servicio (Teoría)</h4>
+                        <p id="modal-theory-text" class="text-secondary" style="font-size: 0.85rem; line-height: 1.4;">
+                            Cargando información teórica...</p>
+                    </div>
+                    <div class="help-section" style="margin-top: 20px;">
+                        <h4><i data-lucide="wrench"></i> Experiencia del Ingeniero (Práctica)</h4>
+                        <p class="subtitle" style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Esta
+                            información será almacenada históricamente para alimentar agentes de IA y guiar resoluciones
+                            futuras.</p>
+                        <textarea id="modal-practice-input" class="glass-input"
+                            style="width: 100%; height: 120px; resize: vertical; padding: 10px; font-size: 0.85rem;"
+                            placeholder="Escribe aquí tu conclusión práctica, solución aplicada o recomendaciones para otros técnicos..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer"
+                    style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+                    <button id="cancel-help-modal" class="btn btn-secondary glass-btn">Cerrar</button>
+                    <button id="save-help-modal" class="btn btn-primary">Guardar Experiencia</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTEXT MENU FOR ALARMS (ATREC Integration) -->
+        <div id="alarm-context-menu" class="glass-panel" style="display: none; position: absolute; z-index: 10000; min-width: 220px; padding: 6px 0; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); border-radius: 8px; backdrop-filter: blur(12px); background: rgba(15, 23, 42, 0.95);">
+            <a href="#" class="context-menu-item" id="menu-ack-alarm" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
+                <i data-lucide="check-square" style="width: 14px; height: 14px; color: var(--success);"></i> Reconocer (Acknowledge)
+            </a>
+            <a href="#" class="context-menu-item" id="menu-create-ticket" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
+                <i data-lucide="ticket" style="width: 14px; height: 14px; color: var(--accent);"></i> Crear Ticket ATREC
+            </a>
+            <a href="#" class="context-menu-item" id="menu-assign-group" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
+                <i data-lucide="users" style="width: 14px; height: 14px; color: #60a5fa;"></i> Asignar a Grupo
+            </a>
+            <a href="#" class="context-menu-item" id="menu-view-detail" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
+                <i data-lucide="eye" style="width: 14px; height: 14px; color: #a78bfa;"></i> Ver Detalle / Ayuda
+            </a>
+        </div>
+
+        <style>
+            .context-menu-item:hover {
+                background: rgba(255, 255, 255, 0.08) !important;
+                color: var(--primary) !important;
+            }
+        </style>
+
+        <script src="script.js"></script>
+</body>
+
+</html>
