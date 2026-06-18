@@ -249,3 +249,48 @@ func TestSysStateParser(t *testing.T) {
 		})
 	}
 }
+
+func TestDisplayManagerParser(t *testing.T) {
+	parser := &DisplayManagerParser{}
+	lines := []string{
+		"Error display driver initialization failed",
+		"Warn: refresh rate mismatch",
+		"Display connected successfully",
+	}
+
+	events := parser.Parse(lines, "displayManager.log")
+	if len(events) != 3 {
+		t.Fatalf("expected 3 events, got %d", len(events))
+	}
+
+	if events[0].Severity != "SEVERE_ERROR" || events[0].Process != "DISP_MGR" {
+		t.Errorf("expected SEVERE_ERROR/DISP_MGR for first log, got %s/%s", events[0].Severity, events[0].Process)
+	}
+	if events[1].Severity != "WARNING" {
+		t.Errorf("expected WARNING, got %s", events[1].Severity)
+	}
+	if events[2].Severity != "INFORMATIONAL" {
+		t.Errorf("expected INFORMATIONAL, got %s", events[2].Severity)
+	}
+}
+
+func TestCsdErrorParser(t *testing.T) {
+	parser := &CsdErrorParser{}
+	lines := []string{
+		"CSD anode temperature critical warning: overheating",
+		"General communication failure",
+	}
+
+	events := parser.Parse(lines, "csdErrorLog")
+	if len(events) != 2 {
+		t.Fatalf("expected 2 events, got %d", len(events))
+	}
+
+	if events[0].Severity != "SEVERE_ERROR" || events[0].Subsystem != "tube" || events[0].Host != "Philips-Achieva" {
+		t.Errorf("expected SEVERE_ERROR/tube/Philips-Achieva, got %s/%s/%s", events[0].Severity, events[0].Subsystem, events[0].Host)
+	}
+	if events[1].Severity != "SEVERE_ERROR" || events[1].Subsystem != "console" {
+		t.Errorf("expected SEVERE_ERROR/console, got %s/%s", events[1].Severity, events[1].Subsystem)
+	}
+}
+

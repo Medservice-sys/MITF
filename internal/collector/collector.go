@@ -26,8 +26,23 @@ type LogFileContent struct {
 	Source string
 }
 
-// Whitelist pattern matching for GE Tomograph target log files.
-var targetLogRegex = regexp.MustCompile(`^(gesys_aurct\.log|scanmgr\.stdout\.log|scanmgr\.stderr\.log|scanmgr\.timers\.log|recon_control\.stdout\.log|recon_control\.timers\.log|dataacq\.stats\.log|dataacq\.stderr\.log|dataacq\.stdout\.log|dataacq\.timers\.log|sysstate\.log.*|displayManager\.log|csdErrorLog)$`)
+// isAllowedLogFile checks if a file is allowed based on the system query mode (online vs service).
+func isAllowedLogFile(fileName string, mode string) bool {
+	// GE Basic logs: allowed in both online and service modes
+	geBasicRegex := regexp.MustCompile(`^(gesys_aurct\.log|scanmgr\.stdout\.log|scanmgr\.stderr\.log|scanmgr\.timers\.log|recon_control\.stdout\.log|recon_control\.timers\.log|dataacq\.stats\.log|dataacq\.stderr\.log|dataacq\.stdout\.log|dataacq\.timers\.log)$`)
+	
+	if geBasicRegex.MatchString(fileName) {
+		return true
+	}
+
+	// Service-only logs (advanced GE files + other vendors: Philips/Siemens)
+	if mode == "service" {
+		serviceRegex := regexp.MustCompile(`^(sysstate\.log.*|displayManager\.log|csdErrorLog)$`)
+		return serviceRegex.MatchString(fileName)
+	}
+
+	return false
+}
 
 // In-memory map to store offsets of files for backward compatibility and testing.
 var (
@@ -102,7 +117,7 @@ func (t *OffsetTracker) Save() error {
 
 // Collector defines the common interface for extracting log events.
 type Collector interface {
-	Collect() ([]LogFileContent, error)
+	Collect(mode string) ([]LogFileContent, error)
 }
 
 // FileCollector implements local file ingestion using os.Open and Seek.
@@ -124,7 +139,7 @@ func NewFileCollector(dirPath string) (*FileCollector, error) {
 }
 
 // Collect reads new bytes from matching local files.
-func (c *FileCollector) Collect() ([]LogFileContent, error) {
+func (c *FileCollector) Collect(mode string) ([]LogFileContent, error) {
 	files, err := os.ReadDir(c.dirPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading local directory: %w", err)
@@ -136,7 +151,7 @@ func (c *FileCollector) Collect() ([]LogFileContent, error) {
 			continue
 		}
 		fileName := f.Name()
-		if !targetLogRegex.MatchString(fileName) {
+		if !isAllowedLogFile(fileName, mode) {
 			continue
 		}
 
@@ -245,7 +260,7 @@ func NewSSHCollector() (*SSHCollector, error) {
 }
 
 // Collect reads new bytes from matching remote files via SSH command piping.
-func (c *SSHCollector) Collect() ([]LogFileContent, error) {
+func (c *SSHCollector) Collect(mode string) ([]LogFileContent, error) {
 	sshConfig := &ssh.ClientConfig{
 		User: c.user,
 		Auth: []ssh.AuthMethod{
@@ -328,7 +343,7 @@ func (c *SSHCollector) Collect() ([]LogFileContent, error) {
 
 	for _, file := range files {
 		fileName := strings.TrimSpace(file)
-		if fileName == "" || !targetLogRegex.MatchString(fileName) {
+		if fileName == "" || !isAllowedLogFile(fileName, mode) {
 			continue
 		}
 
@@ -411,19 +426,19 @@ func (c *SSHCollector) Collect() ([]LogFileContent, error) {
 }
 
 // CollectTomographLogs acts as the centralized wrapper matching configuration to appropriate Collector.
-func CollectTomographLogs() ([]LogFileContent, error) {
+func CollectTomographLogs(mode string) ([]LogFileContent, error) {
 	collectorType := os.Getenv("CT_COLLECTOR_TYPE")
 	if collectorType == "local" || config.AppConfig.SSHHost == "local" {
 		col, err := NewFileCollector(config.AppConfig.RemoteLogDir)
 		if err != nil {
 			return nil, err
 		}
-		return col.Collect()
+		return col.Collect(mode)
 	}
 
 	col, err := NewSSHCollector()
 	if err != nil {
 		return nil, err
 	}
-	return col.Collect()
+	return col.Collect(mode)
 }

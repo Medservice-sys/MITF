@@ -1443,6 +1443,41 @@ window.addEventListener('DOMContentLoaded', () => {
     startCountdown();
     loadConfigMode();
     initUserRole();
+
+    // Bind toggle button from dashboard mode banner
+    const toggleBtn = document.getElementById('btn-toggle-mode-dash');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', async () => {
+            toggleBtn.disabled = true;
+            try {
+                // Get current mode
+                const res = await fetch('/api/config');
+                if (res.ok) {
+                    const cfg = await res.json();
+                    const currentMode = cfg.operationMode || "online";
+                    const newMode = currentMode === "online" ? "service" : "online";
+                    
+                    // Save new mode
+                    const saveRes = await fetch('/api/config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ operationMode: newMode })
+                    });
+                    
+                    if (saveRes.ok) {
+                        await loadConfigMode();
+                        refreshDashboard();
+                    } else {
+                        alert("Error al cambiar el modo de operación.");
+                    }
+                }
+            } catch (err) {
+                console.error("Error toggling operation mode:", err);
+            } finally {
+                toggleBtn.disabled = false;
+            }
+        });
+    }
 });
 
 // ============================================================================
@@ -2255,13 +2290,67 @@ if (dicomForm) {
 // 6. Settings Operation Mode Integration
 async function loadConfigMode() {
     const selectMode = document.getElementById('setting-opmode');
-    if (!selectMode) return;
+    const badge = document.getElementById('dashboard-mode-badge');
+    const desc = document.getElementById('dashboard-mode-desc');
+    const banner = document.getElementById('dashboard-mode-banner');
+    const toggleBtn = document.getElementById('btn-toggle-mode-dash');
+    const pulseDot = document.getElementById('mode-pulse-dot');
+    const pulseRing = document.getElementById('mode-pulse-ring');
 
     try {
         const res = await fetch('/api/config');
         if (res.ok) {
             const cfg = await res.json();
-            selectMode.value = cfg.operationMode || "online";
+            const mode = cfg.operationMode || "online";
+            
+            if (selectMode) selectMode.value = mode;
+
+            if (mode === "service") {
+                if (badge) {
+                    badge.innerText = "Modo Servicio (Multimarca)";
+                    badge.className = "pill pill-warning";
+                }
+                if (desc) {
+                    desc.innerText = "Lectura avanzada activa: logs adicionales de GE y soporte multimarca para Siemens (sysstate.log) y Philips (csdErrorLog).";
+                }
+                if (banner) {
+                    banner.style.borderLeft = "4px solid var(--warning)";
+                }
+                if (pulseDot) {
+                    pulseDot.style.background = "var(--warning)";
+                    pulseDot.style.boxShadow = "0 0 8px var(--warning)";
+                }
+                if (pulseRing) {
+                    pulseRing.style.background = "var(--warning)";
+                }
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = `<i data-lucide="sliders" style="width: 14px; height: 14px;"></i> Salir de Modo Servicio`;
+                }
+            } else {
+                if (badge) {
+                    badge.innerText = "Modo En Línea";
+                    badge.className = "pill pill-info";
+                }
+                if (desc) {
+                    desc.innerText = "Lectura directa en línea en equipos GE (gesys_aurct.log, scanmgr.log, recon.log, dataacq.log).";
+                }
+                if (banner) {
+                    banner.style.borderLeft = "4px solid var(--primary)";
+                }
+                if (pulseDot) {
+                    pulseDot.style.background = "var(--secondary)";
+                    pulseDot.style.boxShadow = "0 0 8px var(--secondary)";
+                }
+                if (pulseRing) {
+                    pulseRing.style.background = "var(--secondary)";
+                }
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = `<i data-lucide="sliders" style="width: 14px; height: 14px;"></i> Ingresar Modo Servicio`;
+                }
+            }
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
         }
     } catch (err) {
         console.error(err);
@@ -2286,6 +2375,7 @@ if (settingsForm) {
             });
             if (res.ok) {
                 alert("Ajustes y Modo de Operación guardados correctamente en el servidor.");
+                await loadConfigMode();
                 refreshDashboard();
             } else {
                 alert("Error al guardar la configuración.");

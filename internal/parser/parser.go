@@ -348,7 +348,7 @@ func (p *ReconParser) Parse(lines []string, source string) []models.UnifiedLogEv
 	return events
 }
 
-// SysStateParser handles sysstate.log files
+// SysStateParser handles sysstate.log files (Siemens logs)
 type SysStateParser struct{}
 
 func (p *SysStateParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
@@ -359,7 +359,7 @@ func (p *SysStateParser) Parse(lines []string, source string) []models.UnifiedLo
 			continue
 		}
 
-		if strings.Contains(trimmed, "Operation started") || strings.Contains(trimmed, "Operation completed") {
+		if strings.Contains(trimmed, "Operation started") || strings.Contains(trimmed, "Operation completed") || strings.Contains(trimmed, "Siemens") || strings.Contains(trimmed, "Rotor lock") {
 			parts := strings.SplitN(trimmed, ":", 2)
 			ts := time.Now()
 			
@@ -372,19 +372,111 @@ func (p *SysStateParser) Parse(lines []string, source string) []models.UnifiedLo
 				}
 			}
 
+			severity := "INFORMATIONAL"
+			lowerLine := strings.ToLower(trimmed)
+			if strings.Contains(lowerLine, "fail") || strings.Contains(lowerLine, "error") || strings.Contains(lowerLine, "critical") {
+				severity = "SEVERE_ERROR"
+			} else if strings.Contains(lowerLine, "warn") {
+				severity = "WARNING"
+			}
+
+			subsystem := "console"
+			tceCode := "MITF.CONSOLE.SYSSTATE"
+			if strings.Contains(lowerLine, "rotor") || strings.Contains(lowerLine, "gantry") {
+				subsystem = "gantry"
+				tceCode = "MITF.GANTRY.ROTOR_LOCK_FAILURE"
+			}
+
 			events = append(events, models.UnifiedLogEvent{
 				Timestamp: ts,
-				Severity:  "INFORMATIONAL",
+				Severity:  severity,
 				Process:   "SYSSTATE",
 				Message:   cleanMessage(trimmed),
 				Source:    source,
-				Subsystem: "console",
-				TCECode:   "MITF.CONSOLE.SYSSTATE",
+				Subsystem: subsystem,
+				TCECode:   tceCode,
+				Host:      "Siemens-MRI-Serv",
 			})
 		}
 	}
 	return events
 }
+
+// DisplayManagerParser handles displayManager.log files (GE advanced service logs)
+type DisplayManagerParser struct{}
+
+func (p *DisplayManagerParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+	fallbackTS := time.Now()
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		lowerLine := strings.ToLower(trimmed)
+		severity := "INFORMATIONAL"
+		if strings.Contains(lowerLine, "error") || strings.Contains(lowerLine, "fail") || strings.Contains(lowerLine, "fatal") {
+			severity = "SEVERE_ERROR"
+		} else if strings.Contains(lowerLine, "warn") {
+			severity = "WARNING"
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: fallbackTS,
+			Severity:  severity,
+			Process:   "DISP_MGR",
+			Message:   cleanMessage(trimmed),
+			Source:    source,
+			Subsystem: "console",
+			TCECode:   "MITF.CONSOLE.DISPLAY_MANAGER_EVENT",
+		})
+	}
+	return events
+}
+
+// CsdErrorParser handles csdErrorLog files (Philips service logs)
+type CsdErrorParser struct{}
+
+func (p *CsdErrorParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+	fallbackTS := time.Now()
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		lowerLine := strings.ToLower(trimmed)
+		severity := "INFORMATIONAL"
+		if strings.Contains(lowerLine, "error") || strings.Contains(lowerLine, "fail") || strings.Contains(lowerLine, "fatal") || strings.Contains(lowerLine, "abort") {
+			severity = "SEVERE_ERROR"
+		} else if strings.Contains(lowerLine, "warn") {
+			severity = "WARNING"
+		}
+
+		// Philips typically has tube errors or general cooling warnings
+		subsystem := "console"
+		tceCode := "MITF.CONSOLE.GENERIC"
+		if strings.Contains(lowerLine, "anode") || strings.Contains(lowerLine, "filament") || strings.Contains(lowerLine, "tube") {
+			subsystem = "tube"
+			tceCode = "MITF.TUBE.TEMP_INDEX"
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: fallbackTS,
+			Severity:  severity,
+			Process:   "CSD_ERROR",
+			Message:   cleanMessage(trimmed),
+			Source:    source,
+			Subsystem: subsystem,
+			TCECode:   tceCode,
+			Host:      "Philips-Achieva",
+		})
+	}
+	return events
+}
+
 
 // Helper function to check if a string starts with a GE CT binary prefix
 func isBinaryPrefix(s string) bool {

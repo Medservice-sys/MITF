@@ -32,8 +32,12 @@ func StartPollingEngine() {
 		Store.Status.LastCheckTime = time.Now()
 		Store.mu.Unlock()
 
+		OperationModeMu.RLock()
+		mode := OperationMode
+		OperationModeMu.RUnlock()
+
 		// Call SSH collector
-		contents, err := collector.CollectTomographLogs()
+		contents, err := collector.CollectTomographLogs(mode)
 
 		Store.mu.Lock()
 		if err != nil {
@@ -50,7 +54,6 @@ func StartPollingEngine() {
 			for _, f := range contents {
 				var p parser.LogParser
 
-				// Match file names based on GE taxonomy
 				if strings.Contains(f.Name, "gesys_aurct") {
 					p = &parser.GesysParser{}
 				} else if strings.Contains(f.Name, "scanmgr") {
@@ -61,6 +64,10 @@ func StartPollingEngine() {
 					p = &parser.ReconParser{}
 				} else if strings.Contains(f.Name, "sysstate") {
 					p = &parser.SysStateParser{}
+				} else if strings.Contains(f.Name, "displayManager") {
+					p = &parser.DisplayManagerParser{}
+				} else if strings.Contains(f.Name, "csdError") {
+					p = &parser.CsdErrorParser{}
 				} else {
 					// Skip files without a defined parser
 					continue
