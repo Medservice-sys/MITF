@@ -32,7 +32,7 @@ let allEvents = [];
 let filteredEvents = [];
 let currentPage = 1;
 const itemsPerPage = 12;
-let refreshInterval = 15; // default 15s
+let refreshInterval = 30; // default 30s
 let timeLeft = refreshInterval;
 let autoRefreshTimer = null;
 
@@ -1198,12 +1198,16 @@ async function loadHistoryData(queryParams = "", force = false) {
     }
     lastHistoryParams = queryParams;
 
-    // Show loading state
-    loadingEl.classList.remove('hidden');
+    const isBackgroundRefresh = force && cachedHistory && Object.keys(cachedHistory).length > 0;
+
+    if (!isBackgroundRefresh) {
+        // Show loading state only on initial load or manual force without cache
+        loadingEl.classList.remove('hidden');
+        contentEl.classList.add('hidden');
+        contentEl.innerHTML = '';
+    }
     errorEl.classList.add('hidden');
     emptyEl.classList.add('hidden');
-    contentEl.classList.add('hidden');
-    contentEl.innerHTML = '';
 
     try {
         const response = await fetch(`/api/history${queryParams}`);
@@ -1245,18 +1249,25 @@ async function loadHistoryData(queryParams = "", force = false) {
             }
         }
         
-        // Hide loading
-        loadingEl.classList.add('hidden');
-
+        if (!isBackgroundRefresh) {
+            // Hide loading only if we explicitly showed it
+            loadingEl.classList.add('hidden');
+        }
+        
         updateHistoryView();
     } catch (err) {
         console.error("Error loading history logs:", err);
-        loadingEl.classList.add('hidden');
+        if (!isBackgroundRefresh) {
+            loadingEl.classList.add('hidden');
+        }
         errorEl.classList.remove('hidden');
     }
 }
 
 function updateHistoryView() {
+    const historySection = document.getElementById('history');
+    const savedScrollTop = historySection ? historySection.scrollTop : 0;
+
     const emptyEl = document.getElementById('history-empty');
     const contentEl = document.getElementById('history-content');
     contentEl.innerHTML = '';
@@ -1352,13 +1363,14 @@ function updateHistoryView() {
         table.innerHTML = `
             <thead>
                 <tr>
+                    <th class="sortable-header" data-column="id" data-table="history" style="width: 8%"># Reg.</th>
                     <th class="sortable-header" data-column="timestamp" data-table="history" style="width: 10%">Hora</th>
-                    <th class="sortable-header" data-column="severity" data-table="history" style="width: 12%">Severidad</th>
+                    <th class="sortable-header" data-column="severity" data-table="history" style="width: 10%">Severidad</th>
                     <th class="sortable-header" data-column="subsystem" data-table="history" style="width: 12%">Subsistema</th>
-                    <th class="sortable-header" data-column="tceCode" data-table="history" style="width: 18%">Código TCE</th>
+                    <th class="sortable-header" data-column="tceCode" data-table="history" style="width: 15%">Código TCE</th>
                     <th class="sortable-header" data-column="process" data-table="history" style="width: 12%">Proceso</th>
                     <th class="sortable-header" data-column="host" data-table="history" style="width: 10%">Host</th>
-                    <th class="sortable-header" data-column="message" data-table="history" style="width: 26%">Mensaje Resumido</th>
+                    <th class="sortable-header" data-column="message" data-table="history" style="width: 23%">Mensaje Resumido</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -1390,6 +1402,7 @@ function updateHistoryView() {
             }
 
             tr.innerHTML = `
+                <td><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim);">#${escapeHtml(ev.id || '-')}</span></td>
                 <td>${timeStr}</td>
                 <td><span class="pill ${pillClass}">${ev.severity}</span></td>
                 <td><span class="pill pill-info" style="background: rgba(140, 80, 255, 0.15); color: #c09fff; border-color: rgba(140, 80, 255, 0.3); font-size: 11px;">${escapeHtml(ev.subsystem || '-')}</span></td>
@@ -1427,6 +1440,11 @@ function updateHistoryView() {
     }
 
     contentEl.appendChild(fragment);
+
+    // Restore the scroll position so it doesn't jump to the top
+    if (historySection) {
+        historySection.scrollTop = savedScrollTop;
+    }
 
     // Update active header classes for this view
     updateHeaderClasses('history');
