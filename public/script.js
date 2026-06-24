@@ -1702,8 +1702,15 @@ async function loadMaintenanceRecords() {
         if (!res.ok) return;
         allTickets = await res.json();
         
+        const currentUser = sessionStorage.getItem('currentUser') || '';
+        const activeRole = sessionStorage.getItem('user-role') || 'operator';
+        let displayTickets = allTickets;
+        if (activeRole === 'engineer' && currentUser) {
+            displayTickets = allTickets.filter(t => t.engineer && t.engineer.toLowerCase() === currentUser.toLowerCase());
+        }
+        
         container.innerHTML = "";
-        if (allTickets.length === 0) {
+        if (displayTickets.length === 0) {
             container.innerHTML = `
                 <div class="text-center padding-all" style="padding: 20px;">
                     <p class="text-secondary">No hay tickets ni bitácoras registradas.</p>
@@ -1712,7 +1719,7 @@ async function loadMaintenanceRecords() {
             return;
         }
 
-        allTickets.forEach(ticket => {
+        displayTickets.forEach(ticket => {
             const item = document.createElement('div');
             
             // Determine border color based on severity
@@ -2972,19 +2979,91 @@ if (settingsForm) {
     });
 }
 
-// 7. Role Access Control and Health Modeling parameters
+// 7. Role Access Control, Authentication, and Health Modeling parameters
+const CREDENTIALS = {
+    'mquino': { password: 'mquino', role: 'engineer', fullName: 'Ing. M. Quino (IC 1)' },
+    'jquispe': { password: 'jquispe', role: 'engineer', fullName: 'Ing. J. Quispe (IC 2)' },
+    'jcontreras': { password: 'jcontreras', role: 'engineer', fullName: 'Ing. J. Contreras (IC 3)' },
+    'operator': { password: 'operator', role: 'operator', fullName: 'Operador de Turno NOC' },
+    'admin': { password: 'admin', role: 'admin', fullName: 'Administrador NOC' }
+};
+
 function initUserRole() {
-    const roleSelect = document.getElementById('user-role-select');
-    if (!roleSelect) return;
+    const currentUser = sessionStorage.getItem('currentUser');
+    const loginOverlay = document.getElementById('login-overlay');
+    
+    if (!currentUser) {
+        if (loginOverlay) loginOverlay.style.display = 'flex';
+    } else {
+        if (loginOverlay) loginOverlay.style.display = 'none';
+        updateSidebarUserDisplay();
+        const activeRole = sessionStorage.getItem('user-role') || 'operator';
+        applyRoleAccessControl(activeRole);
+    }
 
-    // Load initial role
-    const activeRole = localStorage.getItem('user-role') || 'operator';
-    roleSelect.value = activeRole;
-    applyRoleAccessControl(activeRole);
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const usernameInput = document.getElementById('login-username');
+            const passwordInput = document.getElementById('login-password');
+            const errorMsg = document.getElementById('login-error-msg');
+            
+            if (!usernameInput || !passwordInput) return;
+            
+            const username = usernameInput.value.trim().toLowerCase();
+            const password = passwordInput.value;
+            
+            const creds = CREDENTIALS[username];
+            if (creds && creds.password === password) {
+                sessionStorage.setItem('currentUser', username);
+                sessionStorage.setItem('user-role', creds.role);
+                sessionStorage.setItem('user-fullname', creds.fullName);
+                
+                if (errorMsg) errorMsg.style.display = 'none';
+                if (loginOverlay) loginOverlay.style.display = 'none';
+                
+                updateSidebarUserDisplay();
+                applyRoleAccessControl(creds.role);
+                
+                usernameInput.value = '';
+                passwordInput.value = '';
+                
+                // Reload content to fit role
+                refreshDashboard();
+                loadMaintenanceRecords();
+            } else {
+                if (errorMsg) errorMsg.style.display = 'block';
+            }
+        });
+    }
 
-    roleSelect.addEventListener('change', (e) => {
-        applyRoleAccessControl(e.target.value);
-    });
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            sessionStorage.clear();
+            if (loginOverlay) loginOverlay.style.display = 'flex';
+            const dashNav = document.querySelector('.nav-item[data-view="dashboard"]');
+            if (dashNav) dashNav.click();
+        });
+    }
+}
+
+function updateSidebarUserDisplay() {
+    const nameEl = document.getElementById('logged-user-name');
+    const roleEl = document.getElementById('logged-user-role');
+    
+    if (nameEl) nameEl.textContent = sessionStorage.getItem('user-fullname') || 'Usuario';
+    if (roleEl) {
+        const role = sessionStorage.getItem('user-role') || 'operator';
+        if (role === 'admin') roleEl.textContent = 'Administrador';
+        else if (role === 'operator') roleEl.textContent = 'Operario';
+        else if (role === 'engineer') roleEl.textContent = 'Ing. Campo';
+    }
+    
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+    }
 }
 
 function applyRoleAccessControl(role) {
@@ -2993,30 +3072,32 @@ function applyRoleAccessControl(role) {
     const adminNav = document.querySelector('.nav-item[data-view="admin-classifications"]');
     const settingsNav = document.querySelector('.nav-item[data-view="settings"]');
     const adminHwPanel = document.getElementById('admin-tube-settings-panel');
+    
+    const maintFormBox = document.querySelector('.maint-form-box');
+    const ticketsContainerParent = document.querySelector('.bitacora-grid > div:nth-child(2)');
 
     if (role === 'operator') {
-        // Hide admin-only features
         if (adminNav) adminNav.style.display = 'none';
         if (settingsNav) settingsNav.style.display = 'none';
         if (adminHwPanel) adminHwPanel.style.display = 'none';
+        if (maintFormBox) maintFormBox.style.display = 'block';
+        if (ticketsContainerParent) ticketsContainerParent.style.gridColumn = 'auto';
 
-        // If currently viewing admin-classifications or settings, go to dashboard
         const activeNav = document.querySelector('.nav-item.active');
         if (activeNav) {
             const currentView = activeNav.getAttribute('data-view');
             if (currentView === 'admin-classifications' || currentView === 'settings') {
                 const dashNav = document.querySelector('.nav-item[data-view="dashboard"]');
-                if (dashNav) {
-                    dashNav.click();
-                }
+                if (dashNav) dashNav.click();
             }
         }
-    } else {
-        // Admin role: show admin views
+    } else if (role === 'admin') {
         if (adminNav) adminNav.style.display = 'flex';
         if (settingsNav) settingsNav.style.display = 'flex';
+        if (adminHwPanel) adminHwPanel.style.display = 'block';
+        if (maintFormBox) maintFormBox.style.display = 'block';
+        if (ticketsContainerParent) ticketsContainerParent.style.gridColumn = 'auto';
 
-        // Load config and validator if in admin view
         const activeNav = document.querySelector('.nav-item.active');
         if (activeNav) {
             const currentView = activeNav.getAttribute('data-view');
@@ -3024,6 +3105,21 @@ function applyRoleAccessControl(role) {
                 loadHealthConfig();
             } else if (currentView === 'hardware') {
                 loadHardwareAdminParams();
+            }
+        }
+    } else if (role === 'engineer') {
+        if (adminNav) adminNav.style.display = 'none';
+        if (settingsNav) settingsNav.style.display = 'none';
+        if (adminHwPanel) adminHwPanel.style.display = 'none';
+        if (maintFormBox) maintFormBox.style.display = 'none';
+        if (ticketsContainerParent) ticketsContainerParent.style.gridColumn = '1 / -1';
+
+        const activeNav = document.querySelector('.nav-item.active');
+        if (activeNav) {
+            const currentView = activeNav.getAttribute('data-view');
+            if (currentView === 'admin-classifications' || currentView === 'settings') {
+                const dashNav = document.querySelector('.nav-item[data-view="dashboard"]');
+                if (dashNav) dashNav.click();
             }
         }
     }
