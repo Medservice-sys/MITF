@@ -449,7 +449,7 @@ func (p *CsdErrorParser) Parse(lines []string, source string) []models.UnifiedLo
 
 		lowerLine := strings.ToLower(trimmed)
 		severity := "INFORMATIONAL"
-		if strings.Contains(lowerLine, "error") || strings.Contains(lowerLine, "fail") || strings.Contains(lowerLine, "fatal") || strings.Contains(lowerLine, "abort") {
+		if strings.Contains(lowerLine, "error") || strings.Contains(lowerLine, "fail") || strings.Contains(lowerLine, "fatal") || strings.Contains(lowerLine, "abort") || strings.Contains(lowerLine, "critical") {
 			severity = "SEVERE_ERROR"
 		} else if strings.Contains(lowerLine, "warn") {
 			severity = "WARNING"
@@ -472,6 +472,75 @@ func (p *CsdErrorParser) Parse(lines []string, source string) []models.UnifiedLo
 			Subsystem: subsystem,
 			TCECode:   tceCode,
 			Host:      "Philips-Achieva",
+		})
+	}
+	return events
+}
+
+// DasToolHistParser handles ssw.dastool.hist logs
+type DasToolHistParser struct{}
+
+func (p *DasToolHistParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+
+	// Fallback to April 25, 2026 if no timestamp is found
+	fallbackTS := time.Date(2026, time.April, 25, 0, 0, 0, 0, time.UTC)
+	for _, line := range lines {
+		ts := parseTimestamp(line)
+		if ts.Year() >= 2020 && ts.Year() < 2030 {
+			fallbackTS = ts
+			break
+		}
+	}
+	lastTimestamp := fallbackTS
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		lowerLine := strings.ToLower(trimmed)
+		severity := "INFORMATIONAL"
+		if strings.Contains(lowerLine, "error") || strings.Contains(lowerLine, "failed") || strings.Contains(lowerLine, "fault") {
+			severity = "SEVERE_ERROR"
+		} else if strings.Contains(lowerLine, "warn") {
+			severity = "WARNING"
+		}
+
+		process := "DASTOOL"
+		subsystem := "das"
+		tceCode := "MITF.DAS.TEST_EVENT"
+
+		// Classify sub-actions
+		if strings.Contains(lowerLine, "calibration") || strings.Contains(lowerLine, "calib") {
+			tceCode = "MITF.DAS.CALIBRATION"
+		} else if strings.Contains(lowerLine, "noise") {
+			tceCode = "MITF.DAS.NOISE_TEST"
+		} else if strings.Contains(lowerLine, "gain") {
+			tceCode = "MITF.DAS.GAIN_TEST"
+		}
+
+		// Extract timestamp
+		ts := parseTimestamp(line)
+		if ts.Year() < 2020 {
+			ts = parseTimestamp(trimmed)
+		}
+
+		if ts.Year() >= 2020 && ts.Year() < 2030 {
+			lastTimestamp = ts
+		} else {
+			ts = lastTimestamp
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: ts,
+			Severity:  severity,
+			Process:   process,
+			Message:   cleanMessage(line),
+			Source:    source,
+			Subsystem: subsystem,
+			TCECode:   tceCode,
 		})
 	}
 	return events

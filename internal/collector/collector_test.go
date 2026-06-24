@@ -151,7 +151,7 @@ func TestCollectTomographLogs(t *testing.T) {
 	}
 
 	// 1. Initial collection
-	results, err := CollectTomographLogs("online")
+	results, err := CollectTomographLogs("online", nil)
 	if err != nil {
 		t.Fatalf("First collection failed: %v", err)
 	}
@@ -188,34 +188,35 @@ func TestCollectTomographLogs(t *testing.T) {
 func TestIsAllowedLogFile(t *testing.T) {
 	tests := []struct {
 		fileName string
+		brand    string
 		mode     string
 		allowed  bool
 	}{
 		// GE Basic files - always allowed
-		{"gesys_aurct.log", "online", true},
-		{"gesys_aurct.log", "service", true},
-		{"scanmgr.stdout.log", "online", true},
-		{"scanmgr.stdout.log", "service", true},
-		{"dataacq.stats.log", "online", true},
-		{"dataacq.stats.log", "service", true},
+		{"gesys_aurct.log", "GE", "online", true},
+		{"gesys_aurct.log", "GE", "service", true},
+		{"scanmgr.stdout.log", "GE", "online", true},
+		{"scanmgr.stdout.log", "GE", "service", true},
+		{"dataacq.stats.log", "GE", "online", true},
+		{"dataacq.stats.log", "GE", "service", true},
 
 		// GE Advanced Service / Other vendors - only allowed in service mode
-		{"displayManager.log", "online", false},
-		{"displayManager.log", "service", true},
-		{"sysstate.log", "online", false},
-		{"sysstate.log", "service", true},
-		{"csdErrorLog", "online", false},
-		{"csdErrorLog", "service", true},
+		{"displayManager.log", "GE", "online", false},
+		{"displayManager.log", "GE", "service", true},
+		{"sysstate.log", "Siemens", "online", true},
+		{"sysstate.log", "Siemens", "service", true},
+		{"csdErrorLog", "Philips", "online", true},
+		{"csdErrorLog", "Philips", "service", true},
 
 		// Random files - never allowed
-		{"random.log", "online", false},
-		{"random.log", "service", false},
+		{"random.log", "GE", "online", false},
+		{"random.log", "GE", "service", false},
 	}
 
 	for _, tt := range tests {
-		res := isAllowedLogFile(tt.fileName, tt.mode)
+		res := isAllowedLogFileForBrand(tt.fileName, tt.brand, tt.mode)
 		if res != tt.allowed {
-			t.Errorf("isAllowedLogFile(%q, %q) expected %v, got %v", tt.fileName, tt.mode, tt.allowed, res)
+			t.Errorf("isAllowedLogFileForBrand(%q, %q, %q) expected %v, got %v", tt.fileName, tt.brand, tt.mode, tt.allowed, res)
 		}
 	}
 }

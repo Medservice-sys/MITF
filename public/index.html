@@ -94,10 +94,17 @@
                 </a>
             </nav>
 
-            <div class="sidebar-footer">
-                <div class="status-indicator">
+            <div class="sidebar-footer" style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.78rem;">
+                <div class="status-indicator" style="margin-bottom: 8px;">
                     <div id="connection-dot" class="dot dot-green"></div>
                     <span id="connection-text">Conectando SSH...</span>
+                </div>
+                <div id="sidebar-device-info" style="display: flex; flex-direction: column; gap: 4px; color: var(--text-dim); font-size: 0.72rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+                    <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"><strong>Tomógrafo:</strong> <span id="sidebar-device-model" style="color: var(--accent);">Auto-detectando...</span></div>
+                    <div style="display: flex; justify-content: space-between; gap: 8px;">
+                        <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">SW: <span id="sidebar-device-sw">-</span></span>
+                        <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">S/N: <span id="sidebar-device-sn">-</span></span>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -1178,6 +1185,27 @@
 
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px;">
                                 <div class="form-group">
+                                    <label for="resolution-type">Tipo de Resolución</label>
+                                    <select id="resolution-type" class="glass-input" onchange="toggleResolutionFields()">
+                                        <option value="field">Resolución En Sitio (Con Visita a Campo)</option>
+                                        <option value="remote">Resolución Remota (Sin Visita a Campo)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="remote-decision-group" style="display: none;">
+                                    <label for="remote-resolved">¿Resuelto remotamente?</label>
+                                    <select id="remote-resolved" class="glass-input">
+                                        <option value="yes">Sí, cerrar ticket remotamente</option>
+                                        <option value="no">No, requiere soporte en sitio (Cambiar a 'En sitio')</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="remote-evidence-group" style="display: none;">
+                                    <label for="remote-evidence">Evidencia Remota (Adjuntar Log/Script/Comandos)</label>
+                                    <input type="text" id="remote-evidence" class="glass-input" placeholder="Ej. cp /usr/g/config/backup/ctdi.cfg /usr/g/config/">
+                                </div>
+                            </div>
+
+                            <div id="field-resolution-details" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px;">
+                                <div class="form-group">
                                     <label for="review-general">Revisión General en Sitio</label>
                                     <textarea id="review-general" class="glass-input"
                                         style="height: 100px; resize: vertical;"
@@ -1188,6 +1216,124 @@
                                     <textarea id="diagnosis" class="glass-input"
                                         style="height: 100px; resize: vertical;"
                                         placeholder="Detalle la causa raíz identificada tras la revisión..."></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Parametrización del Ciclo de Mantenimiento para la IA -->
+                            <div id="maintenance-lifecycle-panel" class="glass-panel" style="margin-bottom: 20px; padding: 15px; border-left: 3px solid var(--accent); background: rgba(255, 255, 255, 0.01);">
+                                <h4 style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                    <i data-lucide="git-branch" style="color: var(--accent); width: 18px; height: 18px;"></i>
+                                    Ciclo de Mantenimiento y Escalación (Parametrización IA)
+                                </h4>
+
+                                <!-- 1. Troubleshooting Nivel 1 -->
+                                <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 12px;">
+                                    <h5 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 0.85rem;">1. Troubleshooting Nivel 1 (Fallas Menores / Warnings)</h5>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                                        <div class="form-group">
+                                            <label for="l1-done" style="font-size: 0.75rem;">¿Realizado Troubleshooting L1?</label>
+                                            <select id="l1-done" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;">
+                                                <option value="no">No</option>
+                                                <option value="yes">Sí</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="l1-success" style="font-size: 0.75rem;">¿Procedimiento L1 Exitoso?</label>
+                                            <select id="l1-success" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;">
+                                                <option value="yes">Sí (Solución estándar)</option>
+                                                <option value="no">No (Requiere análisis)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="l1-masked" style="font-size: 0.75rem;">¿Falla Enmascarada?</label>
+                                            <select id="l1-masked" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;">
+                                                <option value="no">No detectada</option>
+                                                <option value="yes">Sí, oculta otra falla</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 8px;">
+                                        <label for="l1-attempt" style="font-size: 0.75rem;">Procedimiento L1 Intentado</label>
+                                        <input type="text" id="l1-attempt" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;" placeholder="Ej. Ciclado de energía, purga rápida de aire de refrigeración...">
+                                    </div>
+                                </div>
+
+                                <!-- 2. Escalación a Nivel 2 -->
+                                <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 12px;">
+                                    <h5 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 0.85rem;">2. Escalación e Ingeniería Especializada (Nivel 2)</h5>
+                                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px;">
+                                        <div class="form-group">
+                                            <label for="l2-escalated" style="font-size: 0.75rem;">¿Escalar a Nivel 2?</label>
+                                            <select id="l2-escalated" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;" onchange="toggleL2Fields()">
+                                                <option value="no">No</option>
+                                                <option value="yes">Sí, derivar caso</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group L2-field" style="display: none;">
+                                            <label for="l2-engineer" style="font-size: 0.75rem;">Ingeniero Nivel 2 Asignado</label>
+                                            <input type="text" id="l2-engineer" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;" placeholder="Nombre del especialista L2">
+                                        </div>
+                                    </div>
+                                    <div class="form-group L2-field" style="margin-top: 8px; display: none;">
+                                        <label for="l2-diagnosis" style="font-size: 0.75rem;">Diagnóstico Consecuente de Nivel 2</label>
+                                        <textarea id="l2-diagnosis" class="glass-input" style="height: 50px; font-size: 0.8rem;" placeholder="Describa la falla consecuente o real detectada por el especialista..."></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Repuestos y Gestión de Importación -->
+                                <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <h5 style="margin: 0; color: var(--text-main); font-size: 0.85rem;">3. Repuestos y Gestión de Inventario (Importación y Adquisición)</h5>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <label for="requires-parts" style="font-size: 0.75rem; margin-bottom: 0;">¿Requiere repuestos?</label>
+                                            <select id="requires-parts" class="glass-input" style="padding: 2px 8px; font-size: 0.75rem; width: auto;" onchange="togglePartsFields()">
+                                                <option value="no">No</option>
+                                                <option value="yes">Sí</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div id="parts-section" style="display: none;">
+                                        <div id="parts-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
+                                            <!-- Lista dinámica de repuestos -->
+                                        </div>
+                                        <button type="button" id="btn-add-part" class="btn glass-btn" style="padding: 4px 8px; font-size: 11px;" onclick="addPartRow()">
+                                            <i data-lucide="plus" style="width: 12px; height: 12px; margin-right: 4px;"></i> Solicitar Otra Parte/Módulo
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 4. Calibración y Calidad de Imagen -->
+                                <div>
+                                    <h5 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 0.85rem;">4. Calibración y Validación de Calidad de Imagen</h5>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                                        <div class="form-group">
+                                            <label for="requires-calib" style="font-size: 0.75rem;">¿Requiere Calibración?</label>
+                                            <select id="requires-calib" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;" onchange="toggleCalibrationFields()">
+                                                <option value="no">No</option>
+                                                <option value="yes">Sí</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group calib-field" style="display: none;">
+                                            <label for="calib-status" style="font-size: 0.75rem;">Estado de Calibración</label>
+                                            <select id="calib-status" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;">
+                                                <option value="approved">Aprobado (Estándar Clínico)</option>
+                                                <option value="failed">No Aprobado (Requiere Ajuste)</option>
+                                                <option value="monitoring">Bajo Monitoreo de Calidad</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group calib-field" style="display: none;">
+                                            <label for="client-approval" style="font-size: 0.75rem;">Aprobación del Cliente</label>
+                                            <select id="client-approval" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;">
+                                                <option value="yes">Sí, conforme</option>
+                                                <option value="no">No, disconforme</option>
+                                                <option value="monitoring">En etapa de monitoreo</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group calib-field" style="margin-top: 8px; display: none;">
+                                        <label for="calib-notes" style="font-size: 0.75rem;">Notas de Calidad de Imagen e Inspección Visual</label>
+                                        <textarea id="calib-notes" class="glass-input" style="height: 50px; font-size: 0.8rem;" placeholder="Comentarios sobre ruido, artefactos, resolución espacial de las imágenes de prueba..."></textarea>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1472,29 +1618,73 @@
                     </div>
                 </header>
 
-                <div class="settings-box glass-panel">
+                <div class="settings-grid-wrapper">
                     <form id="settings-form">
-                        <div class="form-group">
-                            <label>Intervalo de Refresco (Segundos)</label>
-                            <input type="number" class="glass-input" value="15" min="5" max="300" id="setting-refresh">
+                        <div class="settings-grid">
+                            <!-- LEFT CARD: GENERAL PARAMETERS -->
+                            <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+                                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                                    <i data-lucide="sliders" style="color: var(--primary); width: 20px; height: 20px;"></i>
+                                    Parámetros del Colector
+                                </h3>
+                                <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4;">
+                                    Configure la frecuencia de actualización y el modo de recolección de telemetría de los equipos.
+                                </p>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.82rem; font-weight: 500; color: var(--text-dim);">Intervalo de Refresco (Segundos)</label>
+                                    <input type="number" class="glass-input" value="15" min="5" max="300" id="setting-refresh" style="width: 100%;">
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.82rem; font-weight: 500; color: var(--text-dim);">Modo de Operación / Sondeo</label>
+                                    <select id="setting-opmode" class="glass-input" style="width: 100%;">
+                                        <option value="online">Modo en Línea (Lectura directa GE)</option>
+                                        <option value="service">Modo Servicio (Multimarca Philips/Siemens/GE Avanzado)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="margin-top: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: #000; border: none; font-weight: 700; padding: 10px 16px;">
+                                    <i data-lucide="save" style="width: 16px; height: 16px;"></i> Guardar Ajustes
+                                </button>
+                            </div>
+
+                            <!-- RIGHT CARD: EQUIPMENTS TO MONITOR -->
+                            <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; min-height: 380px; min-width: 0; width: 100%;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+                                    <div>
+                                        <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin: 0;">
+                                            <i data-lucide="cpu" style="color: var(--secondary); width: 20px; height: 20px;"></i>
+                                            Equipos a Monitorear (NEs)
+                                        </h3>
+                                        <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-top: 2px;">
+                                            Elementos de red clínicos activos bajo monitoreo por el colector MITF
+                                        </p>
+                                    </div>
+                                    <button type="button" id="btn-add-device" class="btn glass-btn font-ui" style="padding: 0.45rem 1rem; font-size: 0.8rem; background: rgba(0,210,255,0.1); border-color: var(--primary); color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                                        <i data-lucide="plus-circle" style="width: 14px; height: 14px;"></i> + Añadir Equipo
+                                    </button>
+                                </div>
+                                
+                                <div class="table-responsive" style="overflow-x: auto; width: 100%; margin-top: 8px;">
+                                    <table class="glass-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                        <thead>
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Nombre</th>
+                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Marca</th>
+                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">IP / Host SSH</th>
+                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Usuario</th>
+                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Dir Logs</th>
+                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Modo SSH</th>
+                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Monitoreo</th>
+                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Conectividad</th>
+                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim); text-align: right;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="devices-config-list">
+                                            <!-- Dynamic rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>Modo de Operación / Sondeo</label>
-                            <select id="setting-opmode" class="glass-input">
-                                <option value="online">Modo en Línea (Lectura directa GE)</option>
-                                <option value="service">Modo Servicio (Lectura multimarca Philips/Siemens/GE Avanzado)
-                                </option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Directorio Remoto de Logs</label>
-                            <input type="text" class="glass-input" value="/usr/g/service/log" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label>Dirección IP del Tomógrafo</label>
-                            <input type="text" class="glass-input" value="10.1.3.107:22" disabled>
-                        </div>
-                        <button type="submit" class="btn glass-btn font-ui">Guardar Cambios</button>
                     </form>
                 </div>
             </section>
@@ -1595,6 +1785,66 @@
                     style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
                     <button id="cancel-help-modal" class="btn btn-secondary glass-btn">Cerrar</button>
                     <button id="save-help-modal" class="btn btn-primary">Guardar Experiencia</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: MONITORED DEVICE EDITOR -->
+        <div id="device-modal" class="modal hidden">
+            <div class="modal-content glass-panel" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3 id="device-modal-title">Añadir Nuevo Equipo</h3>
+                    <button class="close-btn" id="close-device-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="device-modal-form">
+                        <input type="hidden" id="device-id-input">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Nombre del Equipo</label>
+                            <input type="text" id="device-name-input" class="glass-input" required placeholder="Ej: Tomógrafo General Electric" style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Marca / Fabricante</label>
+                            <select id="device-brand-input" class="glass-input" style="width: 100%;">
+                                <option value="GE">General Electric</option>
+                                <option value="Siemens">Siemens</option>
+                                <option value="Philips">Philips</option>
+                                <option value="Toshiba">Toshiba</option>
+                                <option value="Hitachi">Hitachi/Fujifilm</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Dirección IP o Host SSH</label>
+                            <input type="text" id="device-host-input" class="glass-input" required placeholder="Ej: 192.168.1.107:22" style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Usuario SSH</label>
+                            <input type="text" id="device-user-input" class="glass-input" required placeholder="Ej: centos" style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Contraseña SSH</label>
+                            <input type="password" id="device-password-input" class="glass-input" placeholder="Omitir si no se modifica" style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Directorio Remoto de Logs</label>
+                            <input type="text" id="device-dir-input" class="glass-input" required placeholder="Ej: /usr/g/service/log" style="width: 100%;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Modo de Conexión SSH</label>
+                            <select id="device-sshmode-input" class="glass-input" style="width: 100%;">
+                                <option value="legacy">Legacy (Cifradores antiguos)</option>
+                                <option value="modern">Modern (Cifradores estándar)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.5rem; display: flex; margin-bottom: 12px;">
+                            <input type="checkbox" id="device-active-input" checked style="width: auto;">
+                            <label for="device-active-input" style="margin-bottom: 0; cursor: pointer; font-size: 0.85rem;">¿Habilitar Monitoreo Activo?</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+                    <button id="cancel-device-modal" class="btn btn-secondary glass-btn">Cancelar</button>
+                    <button id="save-device-modal" class="btn btn-primary">Guardar Equipo</button>
                 </div>
             </div>
         </div>

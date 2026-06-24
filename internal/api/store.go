@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -26,6 +28,9 @@ var Store = &SafeStore{
 		Status:        "DISCONNECTED",
 		LastError:     "No connection attempted yet",
 		LastCheckTime: time.Now(),
+		Model:         "GE LightSpeed CT (Legacy)",
+		SWVersion:     "v1.2.4-service",
+		SerialNumber:  "GE-CT-8218-X",
 	},
 }
 
@@ -35,6 +40,9 @@ var (
 	OperationModeMu        sync.RWMutex
 	CustomClassifications   = make(map[string]string)
 	CustomClassificationsMu sync.RWMutex
+	DeviceProfiles          = make([]models.DeviceProfile, 0)
+	DeviceProfilesMu        sync.RWMutex
+	GlobalRefreshSec        = 15
 )
 
 func init() {
@@ -95,6 +103,48 @@ func init() {
 	loadClassificationsOnStartup()
 }
 
+func LoadDevicesOnStartup() {
+	DeviceProfilesMu.Lock()
+	defer DeviceProfilesMu.Unlock()
+
+	data, err := os.ReadFile("data/devices.json")
+	if err == nil {
+		if err := json.Unmarshal(data, &DeviceProfiles); err == nil && len(DeviceProfiles) > 0 {
+			return
+		}
+	}
+
+	// Fallback to migrating the device defined in env
+	host := os.Getenv("CT_SSH_HOST")
+	if host != "" {
+		brand := "GE" // Default brand
+		user := os.Getenv("CT_SSH_USER")
+		pass := os.Getenv("CT_SSH_PASSWORD")
+		dir := os.Getenv("CT_REMOTE_LOG_DIR")
+		mode := os.Getenv("CT_SSH_MODE")
+		if mode == "" {
+			mode = "legacy"
+		}
+		
+		defaultDev := models.DeviceProfile{
+			ID:           "default-ne-1",
+			Name:         "GE Tomógrafo Principal",
+			Host:         host,
+			User:         user,
+			Password:     pass,
+			Brand:        brand,
+			RemoteLogDir: dir,
+			SSHMode:      mode,
+			Active:       true,
+		}
+		DeviceProfiles = []models.DeviceProfile{defaultDev}
+		
+		// Save it
+		bytes, _ := json.MarshalIndent(DeviceProfiles, "", "  ")
+		_ = os.WriteFile("data/devices.json", bytes, 0644)
+	}
+}
+
 func loadConfigOnStartup() {
 	OperationModeMu.Lock()
 	defer OperationModeMu.Unlock()
@@ -103,14 +153,23 @@ func loadConfigOnStartup() {
 	if err != nil {
 		// Default config
 		OperationMode = "online"
+		GlobalRefreshSec = 15
 		return
 	}
 
 	var cfg struct {
-		OperationMode string `json:"operationMode"`
+		OperationMode   string `json:"operationMode"`
+		RefreshInterval int    `json:"refreshInterval"`
 	}
-	if err := json.Unmarshal(file, &cfg); err == nil && cfg.OperationMode != "" {
-		OperationMode = cfg.OperationMode
+	if err := json.Unmarshal(file, &cfg); err == nil {
+		if cfg.OperationMode != "" {
+			OperationMode = cfg.OperationMode
+		}
+		if cfg.RefreshInterval >= 5 {
+			GlobalRefreshSec = cfg.RefreshInterval
+		} else {
+			GlobalRefreshSec = 15
+		}
 	}
 }
 
@@ -155,7 +214,25 @@ func getProcessedEvents() []models.UnifiedLogEvent {
 	if mode == "service" {
 		now := time.Now()
 		
-		// Injected Siemens Service Log
+		// Injected Siemens Service Info & Error logs
+		siemensInfo1 := models.UnifiedLogEvent{
+			Timestamp: now.Add(-6 * time.Minute),
+			Severity:  "INFO",
+			Subsystem: "gantry",
+			Process:   "sysstate.log",
+			TCECode:   "MITF.SYSTEM.INFO",
+			Message:   "Siemens Somatom Definition AS startup completed successfully",
+			Host:      "Siemens-MRI-Serv",
+		}
+		siemensInfo2 := models.UnifiedLogEvent{
+			Timestamp: now.Add(-6 * time.Minute),
+			Severity:  "INFO",
+			Subsystem: "gantry",
+			Process:   "sysstate.log",
+			TCECode:   "MITF.SYSTEM.INFO",
+			Message:   "System Software version: V5.2.1-service, Serial Number: SN-SIEMENS-98765",
+			Host:      "Siemens-MRI-Serv",
+		}
 		siemensEv := models.UnifiedLogEvent{
 			Timestamp: now.Add(-5 * time.Minute),
 			Severity:  "CRITICAL",
@@ -166,7 +243,16 @@ func getProcessedEvents() []models.UnifiedLogEvent {
 			Host:      "Siemens-MRI-Serv",
 		}
 		
-		// Injected Philips Service Log
+		// Injected Philips Service Info & Error logs
+		philipsInfo := models.UnifiedLogEvent{
+			Timestamp: now.Add(-11 * time.Minute),
+			Severity:  "INFO",
+			Subsystem: "tube",
+			Process:   "csdErrorLog",
+			TCECode:   "MITF.SYSTEM.INFO",
+			Message:   "Philips Brilliance 64 system online, software release: 4.1.2, S/N: SN-PHILIPS-12345",
+			Host:      "Philips-Achieva",
+		}
 		philipsEv := models.UnifiedLogEvent{
 			Timestamp: now.Add(-10 * time.Minute),
 			Severity:  "WARNING",
@@ -177,12 +263,15 @@ func getProcessedEvents() []models.UnifiedLogEvent {
 			Host:      "Philips-Achieva",
 		}
 
-		events = append(events, siemensEv, philipsEv)
+		events = append(events, siemensInfo1, siemensInfo2, siemensEv, philipsInfo, philipsEv)
 	}
 
 	// Inject dynamic tube warning/critical alarms based on specs (mAs/thermal limits)
 	dynamicAlarms := metrics.GetDynamicTubeAlarms(events)
 	events = append(events, dynamicAlarms...)
+
+	// Update YANG tree and system details dynamically from current events
+	UpdateYANGTreeFromEvents(events)
 
 	CustomClassificationsMu.RLock()
 	defer CustomClassificationsMu.RUnlock()
@@ -236,4 +325,147 @@ func getProcessedEvents() []models.UnifiedLogEvent {
 	}
 
 	return result
+}
+
+// UpdateYANGTreeFromEvents dynamically parses log events to detect scanner type, sw version, and serial number
+func UpdateYANGTreeFromEvents(events []models.UnifiedLogEvent) {
+	if len(events) == 0 {
+		return
+	}
+
+	modelRegexes := []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(?:product|model|system|equipment)(?:\s+name|\s+type)?\s*[:=]\s*([a-zA-Z0-9\s_\-\(\)]+)`),
+		regexp.MustCompile(`(?i)\b(lightspeed\s*(?:vct|16|ultra|pro|plus|rt)?|optima\s*(?:ct\d+|ct\s*\d+|\d+)?|revolution\s*(?:evo|maxima|apex|\d+)?|brightspeed\s*(?:16|elite|select)?|discovery\s*(?:ct\d+|\d+)?)\b`),
+		regexp.MustCompile(`(?i)\b(somatom\s*(?:definition|sensation|emotion|go\s*fit|go\s*now|definition\s*as|force|drive)?)\b`),
+		regexp.MustCompile(`(?i)\b(brilliance\s*(?:16|64|ict)?|ingenuity\s*(?:ct)?|spectral\s*(?:ct)?|access\s*(?:ct)?)\b`),
+		regexp.MustCompile(`(?i)\b(aquilion\s*(?:one|prime|cxl|lightning|rx|cx)?)\b`),
+	}
+
+	swRegexes := []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(?:software\s+version|sw\s+version|sw\s+rev|release|version)\s*[:=]\s*([a-zA-Z0-9\.\-_]+)`),
+		regexp.MustCompile(`(?i)\b(?:sw|v|ver|version|release)\s*[:=]?\s*(\d+\.\d+\.\d+(?:-[a-zA-Z0-9\.]+)?)\b`),
+	}
+
+	snRegexes := []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(?:serial\s*number|system\s*serial|serial\s*no|s/n|sn)\s*[:=]\s*([a-zA-Z0-9\-_]+)`),
+	}
+
+	var detectedModel, detectedSW, detectedSN string
+
+	for _, ev := range events {
+		// Also look at hostname for hints
+		if ev.Host != "" && ev.Host != "host_test" && ev.Host != "localhost" && ev.Host != "127.0.0.1" {
+			// If hostname matches a model keyword, use it as fallback
+			if detectedModel == "" {
+				for _, r := range modelRegexes {
+					if m := r.FindString(ev.Host); m != "" {
+						detectedModel = m
+						break
+					}
+				}
+			}
+			// Hostname might be serial number if it has a pattern like GE-CT-xxxx
+			if detectedSN == "" && strings.HasPrefix(strings.ToUpper(ev.Host), "GE-") {
+				detectedSN = ev.Host
+			}
+		}
+
+		// Search event message
+		msg := ev.Message
+		if msg == "" {
+			continue
+		}
+
+		// Try to find model
+		if detectedModel == "" {
+			for _, r := range modelRegexes {
+				if matches := r.FindStringSubmatch(msg); len(matches) > 1 {
+					val := strings.TrimSpace(matches[1])
+					if val != "" && !strings.Contains(strings.ToLower(val), "error") {
+						lowerVal := strings.ToLower(val)
+						if strings.Contains(lowerVal, "somatom") || strings.Contains(lowerVal, "brilliance") || strings.Contains(lowerVal, "aquilion") {
+							detectedModel = val
+						} else if !strings.HasPrefix(strings.ToUpper(val), "GE") {
+							detectedModel = "GE " + val
+						} else {
+							detectedModel = val
+						}
+						break
+					}
+				}
+			}
+		}
+
+		// Try to find software version
+		if detectedSW == "" {
+			for _, r := range swRegexes {
+				if matches := r.FindStringSubmatch(msg); len(matches) > 1 {
+					val := strings.TrimSpace(matches[1])
+					if val != "" {
+						detectedSW = val
+						break
+					}
+				}
+			}
+		}
+
+		// Try to find serial number
+		if detectedSN == "" {
+			for _, r := range snRegexes {
+				if matches := r.FindStringSubmatch(msg); len(matches) > 1 {
+					val := strings.TrimSpace(matches[1])
+					if val != "" {
+						detectedSN = val
+						break
+					}
+				}
+			}
+		}
+
+		// If we found all three, we can stop early
+		if detectedModel != "" && detectedSW != "" && detectedSN != "" {
+			break
+		}
+	}
+
+	Store.mu.Lock()
+	defer Store.mu.Unlock()
+
+	// Update Status values
+	if detectedModel != "" {
+		Store.Status.Model = detectedModel
+	}
+	if detectedSW != "" {
+		Store.Status.SWVersion = detectedSW
+	}
+	if detectedSN != "" {
+		Store.Status.SerialNumber = detectedSN
+	}
+
+	if Store.YANGTree == nil {
+		return
+	}
+
+	// Find the identification node
+	var idNode *models.YangNode
+	for _, child := range Store.YANGTree.Children {
+		if child.Name == "identification" {
+			idNode = child
+			break
+		}
+	}
+
+	if idNode != nil {
+		for _, leaf := range idNode.Children {
+			if leaf.Name == "model" && detectedModel != "" {
+				leaf.Value = detectedModel
+			}
+			if leaf.Name == "sw-version" && detectedSW != "" {
+				leaf.Value = detectedSW
+			}
+			if leaf.Name == "serial-number" && detectedSN != "" {
+				leaf.Value = detectedSN
+			}
+		}
+	}
 }

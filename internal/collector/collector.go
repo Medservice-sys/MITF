@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"mitf/internal/config"
+	"mitf/internal/models"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -26,21 +27,34 @@ type LogFileContent struct {
 	Source string
 }
 
-// isAllowedLogFile checks if a file is allowed based on the system query mode (online vs service).
-func isAllowedLogFile(fileName string, mode string) bool {
-	// GE Basic logs: allowed in both online and service modes
-	geBasicRegex := regexp.MustCompile(`^(gesys_aurct\.log|scanmgr\.stdout\.log|scanmgr\.stderr\.log|scanmgr\.timers\.log|recon_control\.stdout\.log|recon_control\.timers\.log|dataacq\.stats\.log|dataacq\.stderr\.log|dataacq\.stdout\.log|dataacq\.timers\.log)$`)
+// isAllowedLogFileForBrand checks if a file is allowed based on the device brand and query mode.
+func isAllowedLogFileForBrand(fileName string, brand string, mode string) bool {
+	brand = strings.ToUpper(brand)
 	
-	if geBasicRegex.MatchString(fileName) {
-		return true
+	switch brand {
+	case "GE":
+		// GE Basic logs: allowed in both online and service modes
+		geBasicRegex := regexp.MustCompile(`^(gesys_aurct\.log|scanmgr\.stdout\.log|scanmgr\.stderr\.log|scanmgr\.timers\.log|recon_control\.stdout\.log|recon_control\.timers\.log|dataacq\.stats\.log|dataacq\.stderr\.log|dataacq\.stdout\.log|dataacq\.timers\.log)$`)
+		if geBasicRegex.MatchString(fileName) {
+			return true
+		}
+		// GE Service logs
+		if mode == "service" {
+			return fileName == "displayManager.log" || fileName == "ssw.dastool.hist"
+		}
+	case "SIEMENS":
+		// Siemens logs (sysstate.log)
+		return strings.HasPrefix(fileName, "sysstate.log")
+	case "PHILIPS":
+		// Philips logs (csdErrorLog)
+		return fileName == "csdErrorLog"
+	case "TOSHIBA", "HITACHI", "FUJIFILM":
+		// Toshiba / Hitachi / Fujifilm: basic logs or generic text logs
+		return strings.HasSuffix(fileName, ".log") || strings.HasSuffix(fileName, ".txt") || fileName == "error.log" || fileName == "status.log"
+	default:
+		// Default: allow basic log files
+		return strings.HasSuffix(fileName, ".log")
 	}
-
-	// Service-only logs (advanced GE files + other vendors: Philips/Siemens)
-	if mode == "service" {
-		serviceRegex := regexp.MustCompile(`^(sysstate\.log.*|displayManager\.log|csdErrorLog)$`)
-		return serviceRegex.MatchString(fileName)
-	}
-
 	return false
 }
 
@@ -123,17 +137,19 @@ type Collector interface {
 // FileCollector implements local file ingestion using os.Open and Seek.
 type FileCollector struct {
 	dirPath string
+	brand   string
 	tracker *OffsetTracker
 }
 
 // NewFileCollector initializes a FileCollector with backup_offsets.json (or offsets.json).
-func NewFileCollector(dirPath string) (*FileCollector, error) {
+func NewFileCollector(dirPath string, brand string) (*FileCollector, error) {
 	tracker, err := NewOffsetTracker("backup_offsets.json", "offsets.json")
 	if err != nil {
 		return nil, err
 	}
 	return &FileCollector{
 		dirPath: dirPath,
+		brand:   brand,
 		tracker: tracker,
 	}, nil
 }
@@ -151,7 +167,7 @@ func (c *FileCollector) Collect(mode string) ([]LogFileContent, error) {
 			continue
 		}
 		fileName := f.Name()
-		if !isAllowedLogFile(fileName, mode) {
+		if !isAllowedLogFileForBrand(fileName, c.brand, mode) {
 			continue
 		}
 
@@ -240,6 +256,7 @@ type SSHCollector struct {
 	password  string
 	mode      string
 	remoteDir string
+	brand     string
 	tracker   *OffsetTracker
 }
 
@@ -255,6 +272,24 @@ func NewSSHCollector() (*SSHCollector, error) {
 		password:  config.AppConfig.SSHPassword,
 		mode:      config.AppConfig.SSHMode,
 		remoteDir: config.AppConfig.RemoteLogDir,
+		brand:     "GE", // Default brand for backward compatibility
+		tracker:   tracker,
+	}, nil
+}
+
+// NewSSHCollectorForDevice initializes an SSHCollector from a DeviceProfile.
+func NewSSHCollectorForDevice(dev models.DeviceProfile) (*SSHCollector, error) {
+	tracker, err := NewOffsetTracker("ssh_offsets.json", "offsets.json")
+	if err != nil {
+		return nil, err
+	}
+	return &SSHCollector{
+		host:      dev.Host,
+		user:      dev.User,
+		password:  dev.Password,
+		mode:      dev.SSHMode,
+		remoteDir: dev.RemoteLogDir,
+		brand:     dev.Brand,
 		tracker:   tracker,
 	}, nil
 }
@@ -343,7 +378,7 @@ func (c *SSHCollector) Collect(mode string) ([]LogFileContent, error) {
 
 	for _, file := range files {
 		fileName := strings.TrimSpace(file)
-		if fileName == "" || !isAllowedLogFile(fileName, mode) {
+		if fileName == "" || !isAllowedLogFileForBrand(fileName, c.brand, mode) {
 			continue
 		}
 
@@ -426,19 +461,48 @@ func (c *SSHCollector) Collect(mode string) ([]LogFileContent, error) {
 }
 
 // CollectTomographLogs acts as the centralized wrapper matching configuration to appropriate Collector.
-func CollectTomographLogs(mode string) ([]LogFileContent, error) {
+func CollectTomographLogs(mode string, profiles []models.DeviceProfile) ([]LogFileContent, error) {
 	collectorType := os.Getenv("CT_COLLECTOR_TYPE")
 	if collectorType == "local" || config.AppConfig.SSHHost == "local" {
-		col, err := NewFileCollector(config.AppConfig.RemoteLogDir)
+		col, err := NewFileCollector(config.AppConfig.RemoteLogDir, "GE")
 		if err != nil {
 			return nil, err
 		}
 		return col.Collect(mode)
 	}
 
-	col, err := NewSSHCollector()
-	if err != nil {
-		return nil, err
+	var allResults []LogFileContent
+
+	// If no profiles provided, fallback to the legacy single CT config
+	if len(profiles) == 0 {
+		col, err := NewSSHCollector()
+		if err != nil {
+			return nil, err
+		}
+		return col.Collect(mode)
 	}
-	return col.Collect(mode)
+
+	// Poll all active device profiles
+	for _, dev := range profiles {
+		if !dev.Active {
+			continue
+		}
+
+		log.Printf("[POLLER] Starting log collection from NE: %s (%s, Brand: %s)", dev.Name, dev.Host, dev.Brand)
+		col, err := NewSSHCollectorForDevice(dev)
+		if err != nil {
+			log.Printf("[POLLER] Error creating SSH Collector for NE %s: %v", dev.Name, err)
+			continue
+		}
+
+		results, err := col.Collect(mode)
+		if err != nil {
+			log.Printf("[POLLER] Error collecting logs from NE %s: %v", dev.Name, err)
+			continue
+		}
+
+		allResults = append(allResults, results...)
+	}
+
+	return allResults, nil
 }

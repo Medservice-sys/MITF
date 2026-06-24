@@ -54,4 +54,20 @@ type CollectorStatus struct {
 	Status        string    `json:"status"` // "CONNECTED", "DISCONNECTED", "ERROR"
 	LastError     string    `json:"lastError"`
 	LastCheckTime time.Time `json:"lastCheckTime"`
+	Model         string    `json:"model,omitempty"`
+	SWVersion     string    `json:"swVersion,omitempty"`
+	SerialNumber  string    `json:"serialNumber,omitempty"`
+}
+
+// DeviceProfile represents a monitored network element (NE) / equipment profile
+type DeviceProfile struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Host         string `json:"host"`
+	User         string `json:"user"`
+	Password     string `json:"password"`
+	Brand        string `json:"brand"`        // "GE", "Philips", "Siemens", "Toshiba", "Hitachi"
+	RemoteLogDir string `json:"remoteLogDir"`
+	SSHMode      string `json:"sshMode"`      // "modern" or "legacy"
+	Active       bool   `json:"active"`
 }

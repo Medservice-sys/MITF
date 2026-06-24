@@ -18,8 +18,12 @@ services:
       - .env
       
     volumes:
-      # Persists the log-reading offsets file across container updates and restarts
+      # Persists the log-reading offsets files across container updates and restarts
       - ./ssh_offsets.json:/app/ssh_offsets.json
+      - ./offsets.json:/app/offsets.json
+      - ./backup_offsets.json:/app/backup_offsets.json
+      # Persists configurations, tickets (Bitácora), and database files
+      - ./data:/app/data
       
     # Prevent container logs from growing indefinitely and saturating host disk
     logging:

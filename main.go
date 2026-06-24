@@ -15,6 +15,9 @@ func main() {
 		log.Fatalf("CRITICAL STARTUP ERROR: %v", err)
 	}
 
+	// Load or migrate device profiles after env is loaded
+	api.LoadDevicesOnStartup()
+
 	// 1. Start background SSH poller engine
 	api.StartPollingEngine()
 
@@ -28,6 +31,7 @@ func main() {
 
 	// Canonical MITF endpoints
 	http.HandleFunc("/api/devices", api.HandleDevices)
+	http.HandleFunc("/api/devices/ping", api.HandleDevicePing)
 	http.HandleFunc("/api/subsystems", api.HandleSubsystems)
 	http.HandleFunc("/api/events", api.HandleData) // mapped to HandleData
 	http.HandleFunc("/api/health", api.HandleHealth)

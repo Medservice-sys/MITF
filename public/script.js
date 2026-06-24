@@ -42,7 +42,18 @@ let cachedClassification = {
     hardware: [],
     dicom: [],
     maintenance: [],
-    stops: {}
+    stops: {},
+    totalMas: 0,
+    totalRevs: 0,
+    maxTemp: 0,
+    activeDate: '',
+    activeTubeModel: '',
+    activeTubeBearing: '',
+    activeTubeEolMasMin: 0,
+    activeTubeEolMasMax: 0,
+    activeTubeInsertRef: '',
+    activeTubeHousing: '',
+    tubeWearPercent: 0
 };
 let cachedHistory = {};
 
@@ -131,7 +142,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
         // Trigger specific view initializations if needed
         const queryParams = getCurrentQueryParams();
         if (targetView === 'yang') {
-            fetchYangTree();
+            fetchYangTree(true);
         } else if (targetView === 'history') {
             loadHistoryData(queryParams);
         } else if (targetView === 'bitacora') {
@@ -375,8 +386,8 @@ async function fetchLogs(queryParams = "") {
             // Render mini logs table (latest 10)
             renderMiniTable();
             
-            // Process filters on full log view
-            applyFullLogFilters();
+            // Process filters on full log view, keeping page on auto-refresh
+            applyFullLogFilters(true);
         }
     } catch (err) {
         console.error("Error fetching logs data:", err);
@@ -430,7 +441,7 @@ function renderMiniTable(events) {
 }
 
 // 8. Full Log View Operations (Filter, Pagination)
-function applyFullLogFilters() {
+function applyFullLogFilters(keepPage = false) {
     const searchText = document.getElementById('full-log-search').value.toLowerCase();
     const severity = document.getElementById('filter-severity').value;
     const process = document.getElementById('filter-process').value;
@@ -452,8 +463,21 @@ function applyFullLogFilters() {
         return true;
     });
 
-    currentPage = 1;
+    if (!keepPage) {
+        currentPage = 1;
+    }
+
+    // Save scroll positions of scrollable parents
+    const scrollContainers = document.querySelectorAll('.table-responsive, .app-layout, main, html, body');
+    const scrollPositions = Array.from(scrollContainers).map(el => ({ el, top: el.scrollTop, left: el.scrollLeft }));
+
     renderFullTable();
+
+    // Restore scroll positions
+    scrollPositions.forEach(item => {
+        item.el.scrollTop = item.top;
+        item.el.scrollLeft = item.left;
+    });
 }
 
 function renderFullTable() {
@@ -506,8 +530,8 @@ function renderFullTable() {
 }
 
 // 9. Fetch YANG Config Tree
-async function fetchYangTree() {
-    if (yangTreeLoaded) return;
+async function fetchYangTree(force = false) {
+    if (yangTreeLoaded && !force) return;
     try {
         const response = await fetch('/api/yang');
         if (response.ok) {
@@ -574,6 +598,9 @@ async function fetchStatus() {
         const response = await fetch('/api/status');
         const dot = document.getElementById('connection-dot');
         const text = document.getElementById('connection-text');
+        const sidebarModel = document.getElementById('sidebar-device-model');
+        const sidebarSW = document.getElementById('sidebar-device-sw');
+        const sidebarSN = document.getElementById('sidebar-device-sn');
 
         if (response.ok) {
             const statusData = await response.json();
@@ -584,13 +611,19 @@ async function fetchStatus() {
                 dot.className = 'dot dot-red';
                 text.innerText = 'Falla Conexión GE';
             }
+
+            if (sidebarModel) sidebarModel.innerText = statusData.model || 'GE LightSpeed CT';
+            if (sidebarSW) sidebarSW.innerText = statusData.swVersion || '-';
+            if (sidebarSN) sidebarSN.innerText = statusData.serialNumber || '-';
         } else {
             dot.className = 'dot dot-red';
             text.innerText = 'Error Servidor';
         }
     } catch (err) {
-        document.getElementById('connection-dot').className = 'dot dot-red';
-        document.getElementById('connection-text').innerText = 'API Offline';
+        const dot = document.getElementById('connection-dot');
+        const text = document.getElementById('connection-text');
+        if (dot) dot.className = 'dot dot-red';
+        if (text) text.innerText = 'API Offline';
     }
 }
 
@@ -819,7 +852,10 @@ async function loadClassificationData(activeView = null, queryParams = "", force
     }
 
     // Check if caching criteria is met (same parameters, not forced, and cache exists)
-    if (!force && lastClassificationParams === queryParams && Object.keys(cachedClassification).length > 0) {
+    if (!force && lastClassificationParams === queryParams && lastClassificationParams !== null) {
+        // Update hardware KPIs dynamically from cache
+        updateHardwareKPIs(cachedClassification);
+
         if (activeView === 'alerts') {
             renderAlertsView(cachedClassification.alerts);
         } else if (activeView === 'hardware') {
@@ -866,6 +902,19 @@ async function loadClassificationData(activeView = null, queryParams = "", force
         if (data.dicom) cachedClassification.dicom = data.dicom;
         if (data.maintenance) cachedClassification.maintenance = data.maintenance;
         if (data.stops) cachedClassification.stops = data.stops;
+
+        // Cache hardware KPIs metadata
+        cachedClassification.totalMas = data.totalMas;
+        cachedClassification.totalRevs = data.totalRevs;
+        cachedClassification.maxTemp = data.maxTemp;
+        cachedClassification.activeDate = data.activeDate;
+        cachedClassification.activeTubeModel = data.activeTubeModel;
+        cachedClassification.activeTubeBearing = data.activeTubeBearing;
+        cachedClassification.activeTubeEolMasMin = data.activeTubeEolMasMin;
+        cachedClassification.activeTubeEolMasMax = data.activeTubeEolMasMax;
+        cachedClassification.activeTubeInsertRef = data.activeTubeInsertRef;
+        cachedClassification.activeTubeHousing = data.activeTubeHousing;
+        cachedClassification.tubeWearPercent = data.tubeWearPercent;
 
         // Render target view if it matches the active tab
         if (activeView === 'alerts') {
@@ -1690,9 +1739,16 @@ async function loadMaintenanceRecords() {
             // Click to open resolution panel
             item.onclick = () => openResolutionPanel(ticket.id);
 
-            const statusLabel = ticket.status === 'closed' 
-                ? `<p style="font-size: 0.8rem; color: var(--success); margin-top: 4px;">Cerrado - Revisado en sitio.</p>`
-                : `<p style="font-size: 0.8rem; color: var(--info); margin-top: 4px;">Click para abrir y llenar bitácora en sitio &rarr;</p>`;
+            let statusLabel = `<p style="font-size: 0.8rem; color: var(--info); margin-top: 4px;">Click para abrir y llenar bitácora &rarr;</p>`;
+            if (ticket.status === 'closed' || ticket.status === 'Cerrado') {
+                if (ticket.resolutionType === 'remote') {
+                    statusLabel = `<p style="font-size: 0.8rem; color: var(--success); margin-top: 4px;">Cerrado (Resolución Remota). Evidencia: ${escapeHtml(ticket.remoteEvidence || 'N/A')}</p>`;
+                } else {
+                    statusLabel = `<p style="font-size: 0.8rem; color: var(--success); margin-top: 4px;">Cerrado (Resolución En Sitio).</p>`;
+                }
+            } else if (ticket.status === 'En sitio' || ticket.status === 'inProgress') {
+                statusLabel = `<p style="font-size: 0.8rem; color: var(--warning); margin-top: 4px;">En Sitio - Intervención física en progreso. Click para cerrar &rarr;</p>`;
+            }
 
             item.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; pointer-events: none;">
@@ -1708,6 +1764,132 @@ async function loadMaintenanceRecords() {
         console.error("Error loading tickets:", err);
     }
 }
+
+// Toggle resolution UI fields based on Remote vs Field selection
+function toggleResolutionFields() {
+    const resTypeSelect = document.getElementById('resolution-type');
+    if (!resTypeSelect) return;
+    const resType = resTypeSelect.value;
+    
+    const remoteEv = document.getElementById('remote-evidence-group');
+    const remoteDec = document.getElementById('remote-decision-group');
+    const fieldDetails = document.getElementById('field-resolution-details');
+    const tasksHeader = document.querySelector('#resolution-form h4');
+    const tasksContainer = document.getElementById('tasks-container');
+    const btnAddTask = document.getElementById('btn-add-task');
+
+    if (resType === 'remote') {
+        if (remoteEv) remoteEv.style.display = 'block';
+        if (remoteDec) remoteDec.style.display = 'block';
+        if (fieldDetails) fieldDetails.style.display = 'none';
+        if (tasksHeader) tasksHeader.style.display = 'none';
+        if (tasksContainer) tasksContainer.style.display = 'none';
+        if (btnAddTask) btnAddTask.style.display = 'none';
+    } else {
+        if (remoteEv) remoteEv.style.display = 'none';
+        if (remoteDec) remoteDec.style.display = 'none';
+        if (fieldDetails) fieldDetails.style.display = 'grid';
+        if (tasksHeader) tasksHeader.style.display = 'block';
+        if (tasksContainer) tasksContainer.style.display = 'block';
+        if (btnAddTask) btnAddTask.style.display = 'inline-flex';
+    }
+}
+window.toggleResolutionFields = toggleResolutionFields;
+
+// Toggle L2 Escalation fields
+function toggleL2Fields() {
+    const l2Esc = document.getElementById('l2-escalated');
+    if (!l2Esc) return;
+    const escalated = l2Esc.value === 'yes';
+    const fields = document.querySelectorAll('.L2-field');
+    fields.forEach(el => el.style.display = escalated ? 'block' : 'none');
+}
+window.toggleL2Fields = toggleL2Fields;
+
+// Toggle Parts & Inventory section
+function togglePartsFields() {
+    const reqParts = document.getElementById('requires-parts');
+    if (!reqParts) return;
+    const requiresParts = reqParts.value === 'yes';
+    const section = document.getElementById('parts-section');
+    if (section) section.style.display = requiresParts ? 'block' : 'none';
+}
+window.togglePartsFields = togglePartsFields;
+
+// Toggle Calibration fields
+function toggleCalibrationFields() {
+    const reqCal = document.getElementById('requires-calib');
+    if (!reqCal) return;
+    const requiresCalib = reqCal.value === 'yes';
+    const fields = document.querySelectorAll('.calib-field');
+    fields.forEach(el => el.style.display = requiresCalib ? 'block' : 'none');
+}
+window.toggleCalibrationFields = toggleCalibrationFields;
+
+// Global array to manage parts list dynamically in active resolution form
+let currentParts = [];
+
+function renderPartsList(parts) {
+    const container = document.getElementById('parts-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (!parts || parts.length === 0) {
+        container.innerHTML = '<p style="font-size: 0.75rem; color: var(--text-dim); text-align: center; margin: 8px 0;">No hay repuestos solicitados en este ticket.</p>';
+        return;
+    }
+
+    parts.forEach((part, index) => {
+        const row = document.createElement('div');
+        row.className = 'part-item';
+        row.style.display = 'grid';
+        row.style.gridTemplateColumns = '1.2fr 1.8fr 1.2fr 1.2fr auto';
+        row.style.gap = '8px';
+        row.style.marginBottom = '8px';
+        row.style.alignItems = 'center';
+
+        row.innerHTML = `
+            <input type="text" class="glass-input part-number" style="font-size: 0.75rem; padding: 4px 8px;" placeholder="P/N (ej. 4535612)" value="${escapeHtml(part.partNumber || '')}" onchange="updatePartField(${index}, 'partNumber', this.value)">
+            <input type="text" class="glass-input part-description" style="font-size: 0.75rem; padding: 4px 8px;" placeholder="Descripción de pieza" value="${escapeHtml(part.description || '')}" onchange="updatePartField(${index}, 'description', this.value)">
+            <select class="glass-input part-status" style="font-size: 0.75rem; padding: 4px 8px;" onchange="updatePartField(${index}, 'status', this.value)">
+                <option value="requested" ${part.status === 'requested' ? 'selected' : ''}>Solicitado</option>
+                <option value="in_transit" ${part.status === 'in_transit' ? 'selected' : ''}>En Tránsito (Importado)</option>
+                <option value="received" ${part.status === 'received' ? 'selected' : ''}>Recibido en Sitio</option>
+                <option value="installed" ${part.status === 'installed' ? 'selected' : ''}>Instalado</option>
+            </select>
+            <input type="date" class="glass-input part-eta" style="font-size: 0.75rem; padding: 4px 8px;" value="${part.eta || ''}" onchange="updatePartField(${index}, 'eta', this.value)">
+            <button type="button" class="btn glass-btn" style="padding: 4px 8px; color: var(--danger); border-color: rgba(255, 77, 77, 0.4);" onclick="removePartRow(${index})">
+                Eliminar
+            </button>
+        `;
+        container.appendChild(row);
+    });
+}
+window.renderPartsList = renderPartsList;
+
+function updatePartField(index, field, value) {
+    if (currentParts[index]) {
+        currentParts[index][field] = value;
+    }
+}
+window.updatePartField = updatePartField;
+
+function removePartRow(index) {
+    currentParts.splice(index, 1);
+    renderPartsList(currentParts);
+}
+window.removePartRow = removePartRow;
+
+function addPartRow() {
+    currentParts.push({
+        partNumber: '',
+        description: '',
+        status: 'requested',
+        eta: ''
+    });
+    renderPartsList(currentParts);
+}
+window.addPartRow = addPartRow;
 
 // Function to open resolution panel and load ticket details
 function openResolutionPanel(ticketId) {
@@ -1725,12 +1907,51 @@ function openResolutionPanel(ticketId) {
     // Set panel title
     const titleElem = document.getElementById('resolution-panel-title');
     if (titleElem) {
-        titleElem.textContent = `3. En Sitio: Resolución y Bitácora - Ticket #${ticket.id}`;
+        titleElem.textContent = `3. Resolución y Bitácora - Ticket #${ticket.id}`;
     }
 
     // Populate fields
+    const resTypeSelect = document.getElementById('resolution-type');
+    if (resTypeSelect) {
+        resTypeSelect.value = ticket.resolutionType || "field";
+    }
+    const remoteEvidenceInput = document.getElementById('remote-evidence');
+    if (remoteEvidenceInput) {
+        remoteEvidenceInput.value = ticket.remoteEvidence || "";
+    }
+    const remoteResolvedSelect = document.getElementById('remote-resolved');
+    if (remoteResolvedSelect) {
+        remoteResolvedSelect.value = "yes";
+    }
     document.getElementById('review-general').value = ticket.reviewGeneral || "";
     document.getElementById('diagnosis').value = ticket.diagnosis || "";
+
+    // Populate new escalation/parts/calibration fields
+    document.getElementById('l1-done').value = ticket.l1TroubleshootingDone ? "yes" : "no";
+    document.getElementById('l1-success').value = ticket.l1StandardSuccess ? "yes" : "no";
+    document.getElementById('l1-masked').value = ticket.isMaskedFailure ? "yes" : "no";
+    document.getElementById('l1-attempt').value = ticket.l1ResolutionAttempt || "";
+    
+    document.getElementById('l2-escalated').value = ticket.escalatedToL2 ? "yes" : "no";
+    document.getElementById('l2-engineer').value = ticket.l2Engineer || "";
+    document.getElementById('l2-diagnosis').value = ticket.l2Diagnosis || "";
+    
+    document.getElementById('requires-parts').value = ticket.requiresParts ? "yes" : "no";
+    
+    // Load and render parts needed (clone array to avoid direct state mutation)
+    currentParts = ticket.partsNeeded ? JSON.parse(JSON.stringify(ticket.partsNeeded)) : [];
+    renderPartsList(currentParts);
+    
+    document.getElementById('requires-calib').value = ticket.requiresCalibration ? "yes" : "no";
+    document.getElementById('calib-status').value = ticket.calibrationStatus || "approved";
+    document.getElementById('client-approval').value = ticket.clientApproval || "yes";
+    document.getElementById('calib-notes').value = ticket.imageQualityNotes || "";
+
+    // Toggle fields based on resolution type and sub-panel selections
+    toggleResolutionFields();
+    toggleL2Fields();
+    togglePartsFields();
+    toggleCalibrationFields();
 
     // Render tasks
     renderTasks(ticket.tasks);
@@ -1834,8 +2055,29 @@ if (resolutionForm) {
         const ticket = allTickets.find(t => t.id === activeTicketId);
         if (!ticket) return;
 
+        const resolutionType = document.getElementById('resolution-type').value;
+        const remoteEvidence = document.getElementById('remote-evidence').value.trim();
+        const remoteResolved = document.getElementById('remote-resolved').value;
         const reviewGeneral = document.getElementById('review-general').value;
         const diagnosis = document.getElementById('diagnosis').value;
+
+        // Collect new escalation, parts, and calibration fields
+        const l1TroubleshootingDone = document.getElementById('l1-done').value === 'yes';
+        const l1StandardSuccess = document.getElementById('l1-success').value === 'yes';
+        const isMaskedFailure = document.getElementById('l1-masked').value === 'yes';
+        const l1ResolutionAttempt = document.getElementById('l1-attempt').value.trim();
+
+        const escalatedToL2 = document.getElementById('l2-escalated').value === 'yes';
+        const l2Engineer = document.getElementById('l2-engineer').value.trim();
+        const l2Diagnosis = document.getElementById('l2-diagnosis').value.trim();
+
+        const requiresParts = document.getElementById('requires-parts').value === 'yes';
+        const partsNeeded = currentParts.filter(p => p.partNumber.trim() !== '' || p.description.trim() !== '');
+
+        const requiresCalibration = document.getElementById('requires-calib').value === 'yes';
+        const calibrationStatus = document.getElementById('calib-status').value;
+        const clientApproval = document.getElementById('client-approval').value;
+        const imageQualityNotes = document.getElementById('calib-notes').value.trim();
 
         // Collect dynamic tasks
         const tasks = [];
@@ -1848,14 +2090,48 @@ if (resolutionForm) {
             }
         });
 
+        // Determine status based on resolution type & decision
+        let status = 'closed';
+        let alertMsg = "Bitácora guardada y ticket cerrado exitosamente.";
+        if (resolutionType === 'remote') {
+            if (remoteEvidence === "") {
+                alert("Por favor, ingrese una evidencia remota (ej. log de backup, comando ejecutado o confirmación del soporte remotos).");
+                return;
+            }
+            if (remoteResolved === 'yes') {
+                status = 'closed';
+                alertMsg = "Ticket cerrado remotamente con evidencia registrada.";
+            } else {
+                status = 'En sitio';
+                alertMsg = "Ticket escalado a 'En sitio' para intervención física.";
+            }
+        }
+
         // Prepare updated ticket payload
         const updatedTicket = {
             ...ticket,
-            status: 'closed',
-            dateClosed: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
-            reviewGeneral,
-            diagnosis,
-            tasks
+            status: status,
+            dateClosed: status === 'closed' ? new Date().toISOString().slice(0, 10) : undefined, // YYYY-MM-DD
+            resolutionType,
+            remoteEvidence: resolutionType === 'remote' ? remoteEvidence : undefined,
+            reviewGeneral: resolutionType === 'field' ? reviewGeneral : undefined,
+            diagnosis: resolutionType === 'field' ? diagnosis : undefined,
+            tasks: resolutionType === 'field' ? tasks : [],
+            
+            // Parametric Lifecycle details
+            l1TroubleshootingDone,
+            l1StandardSuccess,
+            isMaskedFailure,
+            l1ResolutionAttempt,
+            escalatedToL2,
+            l2Engineer: escalatedToL2 ? l2Engineer : undefined,
+            l2Diagnosis: escalatedToL2 ? l2Diagnosis : undefined,
+            requiresParts,
+            partsNeeded: requiresParts ? partsNeeded : [],
+            requiresCalibration,
+            calibrationStatus: requiresCalibration ? calibrationStatus : undefined,
+            clientApproval: requiresCalibration ? clientApproval : undefined,
+            imageQualityNotes: requiresCalibration ? imageQualityNotes : undefined
         };
 
         try {
@@ -1868,9 +2144,9 @@ if (resolutionForm) {
             if (res.ok) {
                 document.getElementById('ticket-resolution-panel').classList.add('hidden');
                 loadMaintenanceRecords();
-                alert("Bitácora guardada y ticket cerrado exitosamente.");
+                alert(alertMsg);
             } else {
-                alert("Error al cerrar el ticket en el servidor.");
+                alert("Error al actualizar el ticket en el servidor.");
             }
         } catch (err) {
             console.error("Error resolving ticket:", err);
@@ -2306,6 +2582,272 @@ if (dicomForm) {
 
 
 // 6. Settings Operation Mode Integration
+let configDevices = [];
+
+function renderDevicesConfigList() {
+    const tbody = document.getElementById('devices-config-list');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (configDevices.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 12px; color: var(--text-dim); font-size: 0.85rem;">No hay equipos configurados.</td></tr>`;
+        return;
+    }
+    
+    configDevices.forEach((dev) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        
+        // Active status badge
+        const activeBadge = dev.active 
+            ? `<span class="pill pill-success" style="font-size:0.75rem;">Monitoreando</span>`
+            : `<span class="pill pill-muted" style="font-size:0.75rem; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.5);">Inactivo</span>`;
+            
+        // Connectivity status badge
+        let statusDot = dev.status || 'unknown';
+        let statusLabel = 'Sin verificar';
+        let latencyLabel = '';
+        if (dev.status === 'online') {
+            statusDot = 'online';
+            statusLabel = 'En línea';
+            if (dev.latency && dev.latency !== '-') {
+                latencyLabel = ` (${dev.latency})`;
+            }
+        } else if (dev.status === 'offline') {
+            statusDot = 'offline';
+            statusLabel = 'Desconectado';
+        } else if (dev.status === 'degraded') {
+            statusDot = 'degraded';
+            statusLabel = 'Error SSH';
+            if (dev.latency && dev.latency !== '-') {
+                latencyLabel = ` (${dev.latency})`;
+            }
+        }
+        
+        const connectivityBadge = `
+            <div style="display: flex; align-items: center; gap: 6px;" title="${escapeHtml(dev.pingError || '')}">
+                <span class="ping-dot ${statusDot}"></span>
+                <span style="font-size: 0.78rem; font-weight: 500; color: ${dev.status === 'offline' ? 'var(--critical)' : dev.status === 'degraded' ? 'var(--warning)' : 'var(--text-main)'};">${statusLabel}${latencyLabel}</span>
+            </div>
+        `;
+        
+        const pingBtnText = dev.pinging ? 'Probando...' : 'Ping';
+        const pingBtnIcon = dev.pinging 
+            ? `<i data-lucide="loader-2" class="animate-spin" style="width: 12px; height: 12px;"></i>`
+            : `<i data-lucide="activity" style="width: 12px; height: 12px;"></i>`;
+        const pingDisabled = dev.pinging ? 'disabled' : '';
+
+        tr.innerHTML = `
+            <td style="padding: 10px 12px; font-weight: 600; color: var(--text-main); font-size: 0.85rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(dev.name)}">${escapeHtml(dev.name)}</td>
+            <td style="padding: 10px 12px;"><span class="pill pill-info" style="font-size:0.75rem;">${escapeHtml(dev.brand)}</span></td>
+            <td style="padding: 10px 12px; font-family: monospace; font-size: 0.8rem; color: var(--accent); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(dev.host)}">${escapeHtml(dev.host)}</td>
+            <td style="padding: 10px 12px; color: var(--text-secondary); font-size: 0.85rem;">${escapeHtml(dev.user)}</td>
+            <td style="padding: 10px 12px; font-family: monospace; font-size: 0.75rem; color: var(--text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(dev.remoteLogDir)}">${escapeHtml(dev.remoteLogDir)}</td>
+            <td style="padding: 10px 12px; text-transform: capitalize; color: var(--text-secondary); font-size: 0.85rem;">${escapeHtml(dev.sshMode)}</td>
+            <td style="padding: 10px 12px;">${activeBadge}</td>
+            <td style="padding: 10px 12px;">${connectivityBadge}</td>
+            <td style="padding: 10px 12px; text-align: right; white-space: nowrap;">
+                <button type="button" class="btn btn-ping-device action-btn-ping" data-id="${dev.id}" ${pingDisabled} style="padding: 4px 10px; font-size: 0.78rem; margin-right: 6px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; font-weight: 600;">
+                    ${pingBtnIcon} <span>${pingBtnText}</span>
+                </button>
+                <button type="button" class="btn btn-edit-device action-btn-edit" data-id="${dev.id}" style="padding: 4px 10px; font-size: 0.78rem; margin-right: 6px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; font-weight: 600;">
+                    <i data-lucide="edit" style="width: 13px; height: 13px; color: var(--info);"></i> <span>Editar</span>
+                </button>
+                <button type="button" class="btn btn-delete-device action-btn-delete" data-id="${dev.id}" style="padding: 4px 10px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; font-weight: 600;">
+                    <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i> <span>Eliminar</span>
+                </button>
+            </td>
+        `;
+        
+        // Bind Ping button
+        tr.querySelector('.btn-ping-device').addEventListener('click', async (e) => {
+            e.preventDefault();
+            dev.pinging = true;
+            renderDevicesConfigList();
+            
+            try {
+                const res = await fetch('/api/devices/ping', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: dev.id })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    dev.status = data.status; // "online", "degraded", "offline"
+                    dev.latency = data.latency; // "X ms" or "-"
+                    dev.pingError = data.error; // error message if any
+                } else {
+                    dev.status = 'offline';
+                    dev.latency = '-';
+                    dev.pingError = `Error HTTP ${res.status}`;
+                }
+            } catch (err) {
+                console.error("Error pinging device:", err);
+                dev.status = 'offline';
+                dev.latency = '-';
+                dev.pingError = err.message;
+            } finally {
+                dev.pinging = false;
+                renderDevicesConfigList();
+            }
+        });
+        
+        // Bind Edit button
+        tr.querySelector('.btn-edit-device').addEventListener('click', () => {
+            openDeviceModal(dev);
+        });
+        
+        // Bind Delete button
+        tr.querySelector('.btn-delete-device').addEventListener('click', () => {
+            if (confirm(`¿Estás seguro de que deseas eliminar el equipo "${dev.name}"?`)) {
+                configDevices = configDevices.filter(d => d.id !== dev.id);
+                renderDevicesConfigList();
+            }
+        });
+        
+        tbody.appendChild(tr);
+    });
+
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+}
+
+// Modal management variables
+const deviceModal = document.getElementById('device-modal');
+const btnAddDevice = document.getElementById('btn-add-device');
+const closeDeviceModal = document.getElementById('close-device-modal');
+const cancelDeviceModal = document.getElementById('cancel-device-modal');
+const saveDeviceModal = document.getElementById('save-device-modal');
+
+if (btnAddDevice) {
+    btnAddDevice.addEventListener('click', () => {
+        openDeviceModal();
+    });
+}
+
+if (closeDeviceModal) {
+    closeDeviceModal.addEventListener('click', () => {
+        hideDeviceModal();
+    });
+}
+
+if (cancelDeviceModal) {
+    cancelDeviceModal.addEventListener('click', () => {
+        hideDeviceModal();
+    });
+}
+
+function openDeviceModal(device = null) {
+    if (!deviceModal) return;
+    
+    const form = document.getElementById('device-modal-form');
+    if (form) form.reset();
+    
+    const title = document.getElementById('device-modal-title');
+    const idInput = document.getElementById('device-id-input');
+    const nameInput = document.getElementById('device-name-input');
+    const brandInput = document.getElementById('device-brand-input');
+    const hostInput = document.getElementById('device-host-input');
+    const userInput = document.getElementById('device-user-input');
+    const passwordInput = document.getElementById('device-password-input');
+    const dirInput = document.getElementById('device-dir-input');
+    const sshmodeInput = document.getElementById('device-sshmode-input');
+    const activeInput = document.getElementById('device-active-input');
+    
+    if (device) {
+        if (title) title.innerText = "Editar Equipo: " + device.name;
+        if (idInput) idInput.value = device.id;
+        if (nameInput) nameInput.value = device.name;
+        if (brandInput) brandInput.value = device.brand;
+        if (hostInput) hostInput.value = device.host;
+        if (userInput) userInput.value = device.user;
+        if (passwordInput) {
+            passwordInput.value = ''; 
+            passwordInput.placeholder = "Omitir si no cambia";
+        }
+        if (dirInput) dirInput.value = device.remoteLogDir;
+        if (sshmodeInput) sshmodeInput.value = device.sshMode;
+        if (activeInput) activeInput.checked = device.active;
+    } else {
+        if (title) title.innerText = "Añadir Nuevo Equipo";
+        if (idInput) idInput.value = '';
+        if (passwordInput) {
+            passwordInput.placeholder = "Contraseña SSH";
+            passwordInput.value = '';
+        }
+        if (brandInput) brandInput.value = 'GE';
+        if (sshmodeInput) sshmodeInput.value = 'legacy';
+        if (activeInput) activeInput.checked = true;
+    }
+    
+    deviceModal.classList.remove('hidden');
+}
+
+function hideDeviceModal() {
+    if (deviceModal) {
+        deviceModal.classList.add('hidden');
+    }
+}
+
+if (saveDeviceModal) {
+    saveDeviceModal.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        const idInput = document.getElementById('device-id-input');
+        const nameInput = document.getElementById('device-name-input');
+        const brandInput = document.getElementById('device-brand-input');
+        const hostInput = document.getElementById('device-host-input');
+        const userInput = document.getElementById('device-user-input');
+        const passwordInput = document.getElementById('device-password-input');
+        const dirInput = document.getElementById('device-dir-input');
+        const sshmodeInput = document.getElementById('device-sshmode-input');
+        const activeInput = document.getElementById('device-active-input');
+        
+        if (!nameInput || !nameInput.value || !hostInput || !hostInput.value || !userInput || !userInput.value || !dirInput || !dirInput.value) {
+            alert("Por favor completa todos los campos requeridos.");
+            return;
+        }
+        
+        const devId = idInput.value;
+        if (devId) {
+            const existing = configDevices.find(d => d.id === devId);
+            if (existing) {
+                existing.name = nameInput.value;
+                existing.brand = brandInput.value;
+                existing.host = hostInput.value;
+                existing.user = userInput.value;
+                if (passwordInput.value) {
+                    existing.password = passwordInput.value;
+                }
+                existing.remoteLogDir = dirInput.value;
+                existing.sshMode = sshmodeInput.value;
+                existing.active = activeInput.checked;
+            }
+        } else {
+            const newDevice = {
+                id: 'ne-' + Date.now(),
+                name: nameInput.value,
+                brand: brandInput.value,
+                host: hostInput.value,
+                user: userInput.value,
+                password: passwordInput.value || '',
+                remoteLogDir: dirInput.value,
+                sshMode: sshmodeInput.value,
+                active: activeInput.checked,
+                status: 'unknown',
+                latency: '-',
+                pingError: '',
+                pinging: false
+            };
+            configDevices.push(newDevice);
+        }
+        
+        renderDevicesConfigList();
+        hideDeviceModal();
+    });
+}
+
 async function loadConfigMode() {
     const selectMode = document.getElementById('setting-opmode');
     const badge = document.getElementById('dashboard-mode-badge');
@@ -2322,6 +2864,24 @@ async function loadConfigMode() {
             const mode = cfg.operationMode || "online";
             
             if (selectMode) selectMode.value = mode;
+
+            if (cfg.refreshInterval) {
+                refreshInterval = cfg.refreshInterval;
+                timeLeft = refreshInterval;
+                const settingRefresh = document.getElementById('setting-refresh');
+                if (settingRefresh) settingRefresh.value = refreshInterval;
+            }
+
+            if (cfg.devices) {
+                configDevices = cfg.devices.map(d => ({
+                    status: 'unknown',
+                    latency: '-',
+                    pingError: '',
+                    pinging: false,
+                    ...d
+                }));
+                renderDevicesConfigList();
+            }
 
             if (mode === "service") {
                 if (badge) {
@@ -2383,16 +2943,24 @@ if (settingsForm) {
         
         const selectMode = document.getElementById('setting-opmode');
         const modeVal = selectMode ? selectMode.value : "online";
+        const refreshValInput = document.getElementById('setting-refresh');
+        const refreshVal = refreshValInput ? parseInt(refreshValInput.value) : 15;
 
         // Save mode
         try {
             const res = await fetch('/api/config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ operationMode: modeVal })
+                body: JSON.stringify({ 
+                    operationMode: modeVal,
+                    refreshInterval: refreshVal,
+                    devices: configDevices.map(({ id, name, host, user, password, brand, remoteLogDir, sshMode, active }) => ({
+                        id, name, host, user, password, brand, remoteLogDir, sshMode, active
+                    }))
+                })
             });
             if (res.ok) {
-                alert("Ajustes y Modo de Operación guardados correctamente en el servidor.");
+                alert("Ajustes del Sistema y equipos guardados correctamente en el servidor.");
                 await loadConfigMode();
                 refreshDashboard();
             } else {
@@ -2551,8 +3119,8 @@ async function updateMathematicalValidator() {
 
         events.forEach(ev => {
             const msg = ev.message || "";
-            if (ev.subsystem === 'tube' && msg.includes('mAs')) {
-                const mAsMatch = msg.match(/([\d,]+)\s*mAs/);
+            if (ev.subsystem === 'tube' || msg.toLowerCase().includes('mas')) {
+                const mAsMatch = msg.match(/([\d,]+)\s*mAs/i);
                 if (mAsMatch) {
                     const val = parseFloat(mAsMatch[1].replace(/,/g, ''));
                     if (!isNaN(val) && val > cumulativeMAs) {

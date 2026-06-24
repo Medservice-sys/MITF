@@ -81,10 +81,10 @@ func HandleMetrics(w http.ResponseWriter, r *http.Request) {
 
 	activeTube := metrics.ResolveActiveTube(filtered)
 	cumulativeMAs := 7478990.0 // Baseline default count
-	reMAs := regexp.MustCompile(`([\d,]+)\s*mAs`)
+	reMAs := regexp.MustCompile(`(?i)([\d,]+)\s*mAs`)
 	for _, ev := range filtered {
-		if ev.Subsystem == "tube" {
-			if strings.Contains(ev.Message, "mAs") {
+		if ev.Subsystem == "tube" || strings.Contains(strings.ToLower(ev.Message), "mas") {
+			if strings.Contains(strings.ToLower(ev.Message), "mas") {
 				matches := reMAs.FindStringSubmatch(ev.Message)
 				if len(matches) > 1 {
 					cleanVal := strings.ReplaceAll(matches[1], ",", "")
@@ -523,15 +523,15 @@ func HandleClassification(w http.ResponseWriter, r *http.Request) {
 
 	reTemp := regexp.MustCompile(`(?:cooling:\s*(\d+)|(\d+(\.\d+)?)\s*°C)`)
 	reRevs := regexp.MustCompile(`Total No\. of Gantry Revolutions\s*:\s*(\d+)`)
-	reMAs := regexp.MustCompile(`([\d,]+)\s*mAs`)
+	reMAs := regexp.MustCompile(`(?i)([\d,]+)\s*mAs`)
 
 	for _, ev := range filteredEvents {
 		// mAs Accumulation count (exposures)
 		if ev.Subsystem == "das" || ev.Process == "SCNMGR/ACQ" || ev.TCECode == "MITF.DAS.ACQUISITION" || ev.Process == "SCNMGR/COOLING" || ev.TCECode == "MITF.COOLING.TEMPERATURE_INDEX" {
 			exposureCount++
 		}
-		if ev.Subsystem == "tube" {
-			if strings.Contains(ev.Message, "mAs") {
+		if ev.Subsystem == "tube" || strings.Contains(strings.ToLower(ev.Message), "mas") {
+			if strings.Contains(strings.ToLower(ev.Message), "mas") {
 				matches := reMAs.FindStringSubmatch(ev.Message)
 				if len(matches) > 1 {
 					cleanVal := strings.ReplaceAll(matches[1], ",", "")

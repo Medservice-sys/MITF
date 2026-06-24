@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"mitf/internal/collector"
+	"mitf/internal/models"
 	"mitf/internal/parser"
 )
 
@@ -36,8 +37,13 @@ func StartPollingEngine() {
 		mode := OperationMode
 		OperationModeMu.RUnlock()
 
-		// Call SSH collector
-		contents, err := collector.CollectTomographLogs(mode)
+		DeviceProfilesMu.RLock()
+		profilesCopy := make([]models.DeviceProfile, len(DeviceProfiles))
+		copy(profilesCopy, DeviceProfiles)
+		DeviceProfilesMu.RUnlock()
+
+		// Call SSH collector with active profiles
+		contents, err := collector.CollectTomographLogs(mode, profilesCopy)
 
 		Store.mu.Lock()
 		if err != nil {
@@ -68,6 +74,8 @@ func StartPollingEngine() {
 					p = &parser.DisplayManagerParser{}
 				} else if strings.Contains(f.Name, "csdError") {
 					p = &parser.CsdErrorParser{}
+				} else if strings.Contains(f.Name, "ssw.dastool.hist") {
+					p = &parser.DasToolHistParser{}
 				} else {
 					// Skip files without a defined parser
 					continue
@@ -88,6 +96,10 @@ func StartPollingEngine() {
 		if len(Store.Events) > 500000 {
 			Store.Events = Store.Events[len(Store.Events)-500000:]
 		}
+
+		// Dynamically auto-detect device model / sw / serial from events
+		UpdateYANGTreeFromEvents(Store.Events)
+
 		Store.mu.Unlock()
 	}
 
@@ -95,8 +107,16 @@ func StartPollingEngine() {
 		// Run first poll cycle immediately on startup
 		runPollCycle()
 
-		ticker := time.NewTicker(15 * time.Second)
-		for range ticker.C {
+		for {
+			DeviceProfilesMu.RLock()
+			refreshInterval := GlobalRefreshSec
+			DeviceProfilesMu.RUnlock()
+
+			if refreshInterval < 5 {
+				refreshInterval = 15
+			}
+
+			time.Sleep(time.Duration(refreshInterval) * time.Second)
 			runPollCycle()
 		}
 	}()

@@ -12,6 +12,9 @@ import (
 	"time"
 
 	"mitf/internal/metrics"
+	"mitf/internal/models"
+
+	"golang.org/x/crypto/ssh"
 )
 
 // New Feature Data Structs
@@ -59,6 +62,36 @@ type TicketRecord struct {
 	RelatedEntity      []TmfRelatedEntity `json:"relatedEntity,omitempty"`
 	RelatedParty       []TmfRelatedParty  `json:"relatedParty,omitempty"`
 	Notes              []TmfNote          `json:"note,omitempty"`
+	ResolutionType     string             `json:"resolutionType,omitempty"`
+	RemoteEvidence     string             `json:"remoteEvidence,omitempty"`
+
+	// Level 1 Troubleshooting
+	L1TroubleshootingDone bool   `json:"l1TroubleshootingDone,omitempty"`
+	L1ResolutionAttempt   string `json:"l1ResolutionAttempt,omitempty"`
+	L1StandardSuccess     bool   `json:"l1StandardSuccess,omitempty"`
+	IsMaskedFailure       bool   `json:"isMaskedFailure,omitempty"`
+
+	// Escalation to L2
+	EscalatedToL2   bool   `json:"escalatedToL2,omitempty"`
+	L2Engineer      string `json:"l2Engineer,omitempty"`
+	L2Diagnosis     string `json:"l2Diagnosis,omitempty"`
+
+	// Parts & Inventory Management
+	RequiresParts bool         `json:"requiresParts,omitempty"`
+	PartsNeeded   []PartRecord `json:"partsNeeded,omitempty"`
+
+	// Calibration & Quality Validation
+	RequiresCalibration bool   `json:"requiresCalibration,omitempty"`
+	CalibrationStatus   string `json:"calibrationStatus,omitempty"` // "approved", "failed", "monitoring"
+	ClientApproval      string `json:"clientApproval,omitempty"`      // "yes", "no", "monitoring"
+	ImageQualityNotes   string `json:"imageQualityNotes,omitempty"`
+}
+
+type PartRecord struct {
+	PartNumber  string `json:"partNumber"`
+	Description string `json:"description"`
+	Status      string `json:"status"` // "requested", "in_transit", "received", "installed"
+	Eta         string `json:"eta,omitempty"`
 }
 
 type KnowledgeBaseEntry struct {
@@ -769,7 +802,7 @@ func HandleAdminTubeModels(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
-// HandleConfig manages current operation mode (Modo Online vs Modo Servicio)
+// HandleConfig manages current operation mode (Modo Online vs Modo Servicio), refresh interval, and monitored devices
 func HandleConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -778,16 +811,29 @@ func HandleConfig(w http.ResponseWriter, r *http.Request) {
 		OperationModeMu.RLock()
 		mode := OperationMode
 		OperationModeMu.RUnlock()
-		json.NewEncoder(w).Encode(map[string]string{"operationMode": mode})
+
+		DeviceProfilesMu.RLock()
+		refresh := GlobalRefreshSec
+		devices := make([]models.DeviceProfile, len(DeviceProfiles))
+		copy(devices, DeviceProfiles)
+		DeviceProfilesMu.RUnlock()
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"operationMode":   mode,
+			"refreshInterval": refresh,
+			"devices":         devices,
+		})
 		return
 	}
 
 	if r.Method == http.MethodPost {
 		var req struct {
-			OperationMode string `json:"operationMode"`
+			OperationMode   string                 `json:"operationMode"`
+			RefreshInterval int                    `json:"refreshInterval"`
+			Devices         []models.DeviceProfile `json:"devices"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.OperationMode == "" {
-			http.Error(w, "Invalid body", http.StatusBadRequest)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid body: "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -796,15 +842,41 @@ func HandleConfig(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if req.RefreshInterval < 5 {
+			req.RefreshInterval = 15
+		}
+
 		OperationModeMu.Lock()
 		OperationMode = req.OperationMode
-		// Save config to file
-		cfgData, _ := json.MarshalIndent(map[string]string{"operationMode": OperationMode}, "", "  ")
-		_ = os.WriteFile("data/config.json", cfgData, 0644)
 		OperationModeMu.Unlock()
 
+		DeviceProfilesMu.Lock()
+		GlobalRefreshSec = req.RefreshInterval
+		if req.Devices != nil {
+			DeviceProfiles = req.Devices
+		}
+		DeviceProfilesMu.Unlock()
+
+		// Save general config
+		cfgData, _ := json.MarshalIndent(map[string]interface{}{
+			"operationMode":   req.OperationMode,
+			"refreshInterval": req.RefreshInterval,
+		}, "", "  ")
+		_ = os.WriteFile("data/config.json", cfgData, 0644)
+
+		// Save devices
+		DeviceProfilesMu.RLock()
+		devData, _ := json.MarshalIndent(DeviceProfiles, "", "  ")
+		_ = os.WriteFile("data/devices.json", devData, 0644)
+		DeviceProfilesMu.RUnlock()
+
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "saved", "operationMode": req.OperationMode})
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":          "saved",
+			"operationMode":   req.OperationMode,
+			"refreshInterval": req.RefreshInterval,
+			"devices":         req.Devices,
+		})
 		return
 	}
 
@@ -1292,4 +1364,129 @@ func performDicomPing(ip string, port int, calledAET, callingAET string) (bool, 
 
 	// Association Rejected or Aborted
 	return false, time.Since(start), nil
+}
+
+// HandleDevicePing attempts to TCP dial and optionally SSH handshake a Monitored Device
+func HandleDevicePing(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+
+	DeviceProfilesMu.RLock()
+	var targetDev *models.DeviceProfile
+	for idx, dev := range DeviceProfiles {
+		if dev.ID == req.ID {
+			targetDev = &DeviceProfiles[idx]
+			break
+		}
+	}
+	DeviceProfilesMu.RUnlock()
+
+	if targetDev == nil {
+		http.Error(w, "Device not found", http.StatusNotFound)
+		return
+	}
+
+	// Ping logic
+	start := time.Now()
+	host := targetDev.Host
+	if !strings.Contains(host, ":") {
+		host = host + ":22"
+	}
+
+	// 1. TCP dial
+	conn, err := net.DialTimeout("tcp", host, 2*time.Second)
+	if err != nil {
+		resp := map[string]interface{}{
+			"id":      targetDev.ID,
+			"status":  "offline",
+			"latency": "-",
+			"error":   fmt.Sprintf("TCP dial failed: %v", err),
+		}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+	defer conn.Close()
+
+	latency := time.Since(start)
+
+	// 2. SSH handshake
+	sshConfig := &ssh.ClientConfig{
+		User: targetDev.User,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(targetDev.Password),
+			ssh.KeyboardInteractive(func(user, instruction string, questions []string, echos []bool) (answers []string, err error) {
+				answers = make([]string, len(questions))
+				for i := range answers {
+					answers[i] = targetDev.Password
+				}
+				return answers, nil
+			}),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         2 * time.Second,
+	}
+
+	if targetDev.SSHMode == "legacy" {
+		sshConfig.HostKeyAlgorithms = []string{
+			ssh.KeyAlgoRSA,
+		}
+		sshConfig.Config = ssh.Config{
+			KeyExchanges: []string{
+				"diffie-hellman-group-exchange-sha256",
+				"diffie-hellman-group-exchange-sha1",
+				"diffie-hellman-group14-sha1",
+				"diffie-hellman-group1-sha1",
+			},
+			Ciphers: []string{
+				"aes128-cbc",
+				"3des-cbc",
+				"blowfish-cbc",
+				"aes128-ctr",
+				"aes192-ctr",
+				"aes256-ctr",
+			},
+			MACs: []string{
+				"hmac-sha1",
+				"hmac-md5",
+				"hmac-ripemd160",
+			},
+		}
+	}
+
+	// Set deadline for TCP socket connection during handshake
+	_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
+	sshConn, _, _, err := ssh.NewClientConn(conn, host, sshConfig)
+	if err != nil {
+		// TCP is online, but SSH failed
+		resp := map[string]interface{}{
+			"id":      targetDev.ID,
+			"status":  "degraded", // TCP active, SSH credentials/handshake failed
+			"latency": fmt.Sprintf("%d ms", latency.Milliseconds()),
+			"error":   fmt.Sprintf("SSH handshake failed: %v", err),
+		}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+	sshConn.Close()
+
+	resp := map[string]interface{}{
+		"id":      targetDev.ID,
+		"status":  "online",
+		"latency": fmt.Sprintf("%d ms", latency.Milliseconds()),
+		"error":   "",
+	}
+	json.NewEncoder(w).Encode(resp)
 }

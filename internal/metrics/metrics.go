@@ -207,14 +207,14 @@ func GetDynamicTubeAlarms(events []models.UnifiedLogEvent) []models.UnifiedLogEv
 	hasTubeMAs := false
 	N_thermal := 0.0
 
-	reMAs := regexp.MustCompile(`([\d,]+)\s*mAs`)
+	reMAs := regexp.MustCompile(`(?i)([\d,]+)\s*mAs`)
 	var latestTime time.Time
 	for _, ev := range events {
 		if ev.Timestamp.After(latestTime) {
 			latestTime = ev.Timestamp
 		}
-		if ev.Subsystem == "tube" {
-			if strings.Contains(ev.Message, "mAs") {
+		if ev.Subsystem == "tube" || strings.Contains(strings.ToLower(ev.Message), "mas") {
+			if strings.Contains(strings.ToLower(ev.Message), "mas") {
 				matches := reMAs.FindStringSubmatch(ev.Message)
 				if len(matches) > 1 {
 					cleanVal := strings.ReplaceAll(matches[1], ",", "")
@@ -322,10 +322,10 @@ func CalculateHealthIndices(events []models.UnifiedLogEvent) (dhi, thi, fhi, roi
 	hasTubeMAs := false
 	N_thermal := 0.0
 
-	reMAs := regexp.MustCompile(`([\d,]+)\s*mAs`)
+	reMAs := regexp.MustCompile(`(?i)([\d,]+)\s*mAs`)
 	for _, ev := range events {
-		if ev.Subsystem == "tube" {
-			if strings.Contains(ev.Message, "mAs") {
+		if ev.Subsystem == "tube" || strings.Contains(strings.ToLower(ev.Message), "mas") {
+			if strings.Contains(strings.ToLower(ev.Message), "mas") {
 				matches := reMAs.FindStringSubmatch(ev.Message)
 				if len(matches) > 1 {
 					cleanVal := strings.ReplaceAll(matches[1], ",", "")
