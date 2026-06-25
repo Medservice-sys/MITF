@@ -71,3 +71,11 @@ type DeviceProfile struct {
 	SSHMode      string `json:"sshMode"`      // "modern" or "legacy"
 	Active       bool   `json:"active"`
 }
+
+// User represents a system user with authentication credentials and an access control role.
+type User struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role"`     // "admin", "operator", "engineer"
+	FullName string `json:"fullName"`
+}

@@ -33,18 +33,26 @@
             </div>
 
             <!-- User Profile & Role Indicator -->
-            <div class="role-selector-container" style="padding: 0 16px 12px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 12px; border-radius: 8px; font-size: 0.8rem;">
-                    <span style="color: var(--text-dim); font-weight: 500; display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px;">
-                        <i data-lucide="user" style="width: 14px; height: 14px; color: var(--accent);"></i> <span id="logged-user-name">Usuario</span>
+            <div class="role-selector-container"
+                style="padding: 0 16px 12px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <div
+                    style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 12px; border-radius: 8px; font-size: 0.8rem;">
+                    <span
+                        style="color: var(--text-dim); font-weight: 500; display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px;">
+                        <i data-lucide="user" style="width: 14px; height: 14px; color: var(--accent);"></i> <span
+                            id="logged-user-name">Usuario</span>
                     </span>
-                    <button type="button" id="btn-logout" style="background: transparent; border: none; color: var(--critical); cursor: pointer; padding: 2px; display: flex; align-items: center; transition: transform var(--transition-speed);" title="Cerrar Sesión">
+                    <button type="button" id="btn-logout"
+                        style="background: transparent; border: none; color: var(--critical); cursor: pointer; padding: 2px; display: flex; align-items: center; transition: transform var(--transition-speed);"
+                        title="Cerrar Sesión">
                         <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
                     </button>
                 </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.04); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem;">
+                <div
+                    style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.04); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem;">
                     <span style="color: var(--text-dim); font-weight: 500;">Rol:</span>
-                    <span id="logged-user-role" style="color: var(--accent); font-weight: 600; text-transform: uppercase; font-size: 0.72rem;">Operario</span>
+                    <span id="logged-user-role"
+                        style="color: var(--accent); font-weight: 600; text-transform: uppercase; font-size: 0.72rem;">Operario</span>
                 </div>
             </div>
 
@@ -92,21 +100,30 @@
                 <a href="#" class="nav-item" data-view="admin-classifications">
                     <i data-lucide="shield-alert"></i> Clasificación Alertas
                 </a>
+                <a href="#" class="nav-item" data-view="users">
+                    <i data-lucide="users"></i> Gestión Usuarios
+                </a>
                 <a href="#" class="nav-item" data-view="settings">
                     <i data-lucide="sliders"></i> Ajustes
                 </a>
             </nav>
 
-            <div class="sidebar-footer" style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.78rem;">
+            <div class="sidebar-footer"
+                style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.78rem;">
                 <div class="status-indicator" style="margin-bottom: 8px;">
                     <div id="connection-dot" class="dot dot-green"></div>
                     <span id="connection-text">Conectando SSH...</span>
                 </div>
-                <div id="sidebar-device-info" style="display: flex; flex-direction: column; gap: 4px; color: var(--text-dim); font-size: 0.72rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
-                    <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"><strong>Tomógrafo:</strong> <span id="sidebar-device-model" style="color: var(--accent);">Auto-detectando...</span></div>
+                <div id="sidebar-device-info"
+                    style="display: flex; flex-direction: column; gap: 4px; color: var(--text-dim); font-size: 0.72rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+                    <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                        <strong>Tomógrafo:</strong> <span id="sidebar-device-model"
+                            style="color: var(--accent);">Auto-detectando...</span></div>
                     <div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">SW: <span id="sidebar-device-sw">-</span></span>
-                        <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">S/N: <span id="sidebar-device-sn">-</span></span>
+                        <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">SW: <span
+                                id="sidebar-device-sw">-</span></span>
+                        <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">S/N: <span
+                                id="sidebar-device-sn">-</span></span>
                     </div>
                 </div>
             </div>
@@ -135,24 +152,33 @@
                 </header>
 
                 <!-- Connection Mode Banner -->
-                <div class="mode-banner glass-panel" id="dashboard-mode-banner" style="margin-bottom: 24px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-left: 4px solid var(--primary);">
+                <div class="mode-banner glass-panel" id="dashboard-mode-banner"
+                    style="margin-bottom: 24px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-left: 4px solid var(--primary);">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <div class="mode-pulse-wrapper" style="position: relative; width: 10px; height: 10px;">
-                            <span class="mode-pulse" id="mode-pulse-dot" style="display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--secondary); box-shadow: 0 0 8px var(--secondary);"></span>
-                            <span class="mode-pulse-ring" id="mode-pulse-ring" style="position: absolute; top: 0; left: 0; display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--secondary); opacity: 0.7; transform: scale(1); animation: modePulseAnim 2s infinite ease-out;"></span>
+                            <span class="mode-pulse" id="mode-pulse-dot"
+                                style="display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--secondary); box-shadow: 0 0 8px var(--secondary);"></span>
+                            <span class="mode-pulse-ring" id="mode-pulse-ring"
+                                style="position: absolute; top: 0; left: 0; display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--secondary); opacity: 0.7; transform: scale(1); animation: modePulseAnim 2s infinite ease-out;"></span>
                         </div>
                         <div>
-                            <div style="font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                                Consulta de Telemetría: <span id="dashboard-mode-badge" class="pill pill-info" style="font-size: 0.75rem; padding: 2px 8px; text-transform: uppercase;">Modo En Línea</span>
+                            <div
+                                style="font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                Consulta de Telemetría: <span id="dashboard-mode-badge" class="pill pill-info"
+                                    style="font-size: 0.75rem; padding: 2px 8px; text-transform: uppercase;">Modo En
+                                    Línea</span>
                             </div>
-                            <div id="dashboard-mode-desc" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 3px;">
-                                Lectura directa en línea en equipos GE (gesys_aurct.log, scanmgr.log, recon.log, dataacq.log).
+                            <div id="dashboard-mode-desc"
+                                style="font-size: 0.75rem; color: var(--text-dim); margin-top: 3px;">
+                                Lectura directa en línea en equipos GE (gesys_aurct.log, scanmgr.log, recon.log,
+                                dataacq.log).
                             </div>
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 0.75rem; color: var(--text-dim);">Cambiar Modo:</span>
-                        <button class="btn glass-btn" id="btn-toggle-mode-dash" style="padding: 6px 12px; font-size: 0.78rem; display: flex; align-items: center; gap: 6px;">
+                        <button class="btn glass-btn" id="btn-toggle-mode-dash"
+                            style="padding: 6px 12px; font-size: 0.78rem; display: flex; align-items: center; gap: 6px;">
                             <i data-lucide="sliders" style="width: 14px; height: 14px;"></i> Ingresar Modo Servicio
                         </button>
                     </div>
@@ -263,13 +289,19 @@
                         <svg viewBox="0 0 900 550" class="room-svg">
                             <!-- Background Room Outline & Wall (Neutral styling, not status colored) -->
                             <!-- Back walls -->
-                            <path class="svg-line-detail" d="M 50,230 L 50,70 L 170,70 L 170,170" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" />
+                            <path class="svg-line-detail" d="M 50,230 L 50,70 L 170,70 L 170,170"
+                                stroke="rgba(255,255,255,0.08)" stroke-width="1.5" />
                             <!-- Partition Wall separating console and scanner room -->
-                            <path class="svg-line-detail" d="M 40,240 L 40,80 L 180,80 L 230,130 L 270,90 L 310,130 L 370,190 L 520,290 L 660,420 M 660,420 L 660,480" stroke="rgba(255,255,255,0.12)" stroke-width="2" />
+                            <path class="svg-line-detail"
+                                d="M 40,240 L 40,80 L 180,80 L 230,130 L 270,90 L 310,130 L 370,190 L 520,290 L 660,420 M 660,420 L 660,480"
+                                stroke="rgba(255,255,255,0.12)" stroke-width="2" />
                             <!-- Window Cutout on Partition Wall -->
-                            <polygon class="svg-line-detail" points="325,180 395,230 395,300 325,250" stroke="rgba(255,255,255,0.16)" stroke-width="1.5" fill="rgba(0,180,255,0.02)" />
-                            <line class="svg-line-detail" x1="335" y1="210" x2="385" y2="250" stroke="rgba(255,255,255,0.06)" />
-                            <line class="svg-line-detail" x1="345" y1="230" x2="375" y2="255" stroke="rgba(255,255,255,0.06)" />
+                            <polygon class="svg-line-detail" points="325,180 395,230 395,300 325,250"
+                                stroke="rgba(255,255,255,0.16)" stroke-width="1.5" fill="rgba(0,180,255,0.02)" />
+                            <line class="svg-line-detail" x1="335" y1="210" x2="385" y2="250"
+                                stroke="rgba(255,255,255,0.06)" />
+                            <line class="svg-line-detail" x1="345" y1="230" x2="375" y2="255"
+                                stroke="rgba(255,255,255,0.06)" />
 
                             <!-- 1. Operator Console (Consola) -->
                             <g id="svg-console" class="svg-element svg-healthy" data-subsystem="console">
@@ -297,7 +329,9 @@
                                 <circle cx="425" cy="425" r="1.5" />
                                 <!-- Chair -->
                                 <ellipse cx="265" cy="425" rx="14" ry="9" />
-                                <path class="svg-line-detail" d="M 252,420 C 250,385 262,380 262,380 L 264,395 C 264,395 254,400 254,420" stroke-width="1.5" />
+                                <path class="svg-line-detail"
+                                    d="M 252,420 C 250,385 262,380 262,380 L 264,395 C 264,395 254,400 254,420"
+                                    stroke-width="1.5" />
                                 <line class="svg-line-detail" x1="265" y1="425" x2="265" y2="460" stroke-width="2.5" />
                                 <line class="svg-line-detail" x1="265" y1="460" x2="250" y2="470" />
                                 <line class="svg-line-detail" x1="265" y1="460" x2="280" y2="470" />
@@ -373,7 +407,8 @@
 
                             <!-- 6. Detector Array + DAS -->
                             <g id="svg-das" class="svg-element svg-healthy" data-subsystem="das">
-                                <path class="svg-line-detail" d="M 750,245 A 30,40 0 0,0 810,245 L 802,253 A 22,32 0 0,1 758,253 Z" />
+                                <path class="svg-line-detail"
+                                    d="M 750,245 A 30,40 0 0,0 810,245 L 802,253 A 22,32 0 0,1 758,253 Z" />
                                 <line class="svg-line-detail" x1="765" y1="248" x2="769" y2="253" />
                                 <line class="svg-line-detail" x1="780" y1="249" x2="780" y2="254" />
                                 <line class="svg-line-detail" x1="795" y1="248" x2="791" y2="253" />
@@ -393,7 +428,8 @@
                                 <!-- Inner bore rim -->
                                 <ellipse cx="780" cy="210" rx="38" ry="48" />
                                 <!-- Bore depth -->
-                                <path class="svg-line-detail" d="M 742,210 A 38,48 0 0,1 818,210 L 800,195 A 28,38 0 0,0 760,195 Z" />
+                                <path class="svg-line-detail"
+                                    d="M 742,210 A 38,48 0 0,1 818,210 L 800,195 A 28,38 0 0,0 760,195 Z" />
                                 <!-- Base feet support mounts -->
                                 <polygon points="700,300 720,310 840,310 860,300 850,325 710,325" />
                                 <!-- Details (LCD screen, Emergency buttons) -->
@@ -741,15 +777,21 @@
                             </div>
                             <span id="hw-mas-val" class="hw-val">0 / 600,000 mAs (0%)</span>
                         </div>
-                        <p class="hw-desc" style="margin-bottom: 8px;">La carga del tubo está en nivel óptimo de acumulación de dosis.</p>
-                        <div id="hw-tube-details" style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; display: flex; flex-direction: column; gap: 4px;">
-                            <div><strong>Modelo Detectado:</strong> <span id="hw-tube-model-val" style="color: var(--accent);">Auto-detectando...</span></div>
+                        <p class="hw-desc" style="margin-bottom: 8px;">La carga del tubo está en nivel óptimo de
+                            acumulación de dosis.</p>
+                        <div id="hw-tube-details"
+                            style="margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; display: flex; flex-direction: column; gap: 4px;">
+                            <div><strong>Modelo Detectado:</strong> <span id="hw-tube-model-val"
+                                    style="color: var(--accent);">Auto-detectando...</span></div>
                             <div style="display: flex; justify-content: space-between;">
-                                <span>Cojinete: <span id="hw-tube-bearing-val" style="color: var(--text-main);">-</span></span>
-                                <span>Capacidad: <span id="hw-tube-capacity-val" style="color: var(--text-main);">-</span></span>
+                                <span>Cojinete: <span id="hw-tube-bearing-val"
+                                        style="color: var(--text-main);">-</span></span>
+                                <span>Capacidad: <span id="hw-tube-capacity-val"
+                                        style="color: var(--text-main);">-</span></span>
                             </div>
                             <div style="font-size: 0.75rem; color: var(--text-dim);">
-                                REF Inserto: <span id="hw-tube-insert-val">-</span> | REF Housing: <span id="hw-tube-housing-val">-</span>
+                                REF Inserto: <span id="hw-tube-insert-val">-</span> | REF Housing: <span
+                                    id="hw-tube-housing-val">-</span>
                             </div>
                         </div>
                     </div>
@@ -763,7 +805,8 @@
                             </div>
                             <span id="hw-revs-val" class="hw-val">0 Rotaciones</span>
                         </div>
-                        <p id="hw-revs-desc" class="hw-desc">Próximo servicio mecánico recomendado a las 100,000 rotaciones.</p>
+                        <p id="hw-revs-desc" class="hw-desc">Próximo servicio mecánico recomendado a las 100,000
+                            rotaciones.</p>
                     </div>
                     <div class="hw-card glass-panel">
                         <h3>Calentamiento del Filamento</h3>
@@ -780,38 +823,51 @@
                 </div>
 
                 <!-- PANEL DE ADMINISTRADOR PARA CONFIGURAR EL TUBO (DESGASTE Y CAPACIDAD CALORÍFICA) -->
-                <div id="admin-tube-settings-panel" class="admin-only glass-panel margin-top" style="margin-top: 24px; padding: 24px; display: none;">
-                    <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; color: var(--text-main);">
+                <div id="admin-tube-settings-panel" class="admin-only glass-panel margin-top"
+                    style="margin-top: 24px; padding: 24px; display: none;">
+                    <h3
+                        style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; color: var(--text-main);">
                         <i data-lucide="settings" style="color: var(--accent); width: 20px; height: 20px;"></i>
                         Parámetros de Desgaste y Capacidad Calorífica del Tubo
                     </h3>
-                    <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; line-height: 1.4;">
-                        Ajuste las variables y límites de diseño según el modelo de tubo instalado en el tomógrafo (capacidad de dosis y desgaste térmico).
+                    <p class="subtitle"
+                        style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; line-height: 1.4;">
+                        Ajuste las variables y límites de diseño según el modelo de tubo instalado en el tomógrafo
+                        (capacidad de dosis y desgaste térmico).
                     </p>
-                    <form id="form-admin-tube-kpi" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: end;">
-                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1;">
-                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Modelo de Tubo Instalado (GE CT Tube)</label>
-                            <select id="admin-hw-tube-model" class="glass-input" style="height: 38px; background-color: rgba(20,24,35,0.85); color: var(--text-main); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 12px; cursor: pointer;">
+                    <form id="form-admin-tube-kpi"
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: end;">
+                        <div class="form-group"
+                            style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1;">
+                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Modelo de Tubo
+                                Instalado (GE CT Tube)</label>
+                            <select id="admin-hw-tube-model" class="glass-input"
+                                style="height: 38px; background-color: rgba(20,24,35,0.85); color: var(--text-main); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 12px; cursor: pointer;">
                                 <option value="auto">Selección Automática (Auto-detectar desde Logs)</option>
                             </select>
                         </div>
                         <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Capacidad de Dosis del Tubo (mAs Máximo)</label>
+                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Capacidad de
+                                Dosis del Tubo (mAs Máximo)</label>
                             <input type="number" id="admin-hw-mas-capacity" class="glass-input" required>
                         </div>
                         <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Capacidad Térmica Máxima (Filamento)</label>
+                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Capacidad
+                                Térmica Máxima (Filamento)</label>
                             <input type="number" id="admin-hw-max-thermal" class="glass-input" required>
                         </div>
                         <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Constante de Disipación Térmica (k_thermal)</label>
+                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Constante de
+                                Disipación Térmica (k_thermal)</label>
                             <input type="number" step="0.001" id="admin-hw-k-thermal" class="glass-input" required>
                         </div>
                         <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Límite de Rotaciones Recomendadas</label>
+                            <label style="font-size: 0.75rem; color: var(--text-dim); font-weight: 500;">Límite de
+                                Rotaciones Recomendadas</label>
                             <input type="number" id="admin-hw-max-revs" class="glass-input" required>
                         </div>
-                        <button type="submit" class="btn btn-primary" style="height: 38px; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer;">
+                        <button type="submit" class="btn btn-primary"
+                            style="height: 38px; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer;">
                             <i data-lucide="save" style="width: 16px; height: 16px;"></i> Guardar Parámetros
                         </button>
                     </form>
@@ -1062,32 +1118,45 @@
                     <!-- 1. Operator: Create/Assign Ticket -->
                     <div class="maint-form-box glass-panel">
                         <h3>1. Operador: Abrir y Asignar Ticket</h3>
-                        <form id="ticket-form" style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
-                            
+                        <form id="ticket-form"
+                            style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;">
+
                             <!-- ATREC Integration Enrichment (Visible/Populated when linked to an alarm) -->
-                            <div id="atrec-enrichment-panel" class="hidden" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 12px; border-radius: 8px;">
-                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
-                                    <span style="font-size: 0.75rem; color: var(--accent); font-weight: bold; display: flex; align-items: center; gap: 4px;">
-                                        <i data-lucide="link" style="width: 12px; height: 12px;"></i> Vinculado a Alarma: <span id="lbl-linked-alarm-id" style="font-family: monospace;">#A-1024</span>
+                            <div id="atrec-enrichment-panel" class="hidden"
+                                style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 12px; border-radius: 8px;">
+                                <div
+                                    style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                                    <span
+                                        style="font-size: 0.75rem; color: var(--accent); font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                                        <i data-lucide="link" style="width: 12px; height: 12px;"></i> Vinculado a
+                                        Alarma: <span id="lbl-linked-alarm-id"
+                                            style="font-family: monospace;">#A-1024</span>
                                     </span>
-                                    <button type="button" id="btn-unlink-alarm" style="background: none; border: none; color: var(--danger); font-size: 11px; cursor: pointer;">Desvincular</button>
+                                    <button type="button" id="btn-unlink-alarm"
+                                        style="background: none; border: none; color: var(--danger); font-size: 11px; cursor: pointer;">Desvincular</button>
                                 </div>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.75rem;">
+                                <div
+                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.75rem;">
                                     <div>
                                         <span style="color: var(--text-dim);">Tipo Canónico:</span>
-                                        <div id="val-canonical-type" style="font-weight: 500; color: var(--text-main);">-</div>
+                                        <div id="val-canonical-type" style="font-weight: 500; color: var(--text-main);">
+                                            -</div>
                                     </div>
                                     <div>
                                         <span style="color: var(--text-dim);">Elemento de Red:</span>
-                                        <div id="val-network-element" style="font-weight: 500; color: var(--text-main);">-</div>
+                                        <div id="val-network-element"
+                                            style="font-weight: 500; color: var(--text-main);">-</div>
                                     </div>
                                     <div>
                                         <span style="color: var(--text-dim);">Servicio Afectado:</span>
-                                        <div id="val-affected-service" style="font-weight: 500; color: var(--text-main); font-style: italic;">-</div>
+                                        <div id="val-affected-service"
+                                            style="font-weight: 500; color: var(--text-main); font-style: italic;">-
+                                        </div>
                                     </div>
                                     <div>
                                         <span style="color: var(--text-dim);">Severidad Alarma:</span>
-                                        <div id="val-alarm-severity" style="font-weight: 500; color: var(--text-main);">-</div>
+                                        <div id="val-alarm-severity" style="font-weight: 500; color: var(--text-main);">
+                                            -</div>
                                     </div>
                                 </div>
                             </div>
@@ -1138,7 +1207,8 @@
 
                             <div class="form-group">
                                 <label for="ticket-note">Nota de Diagnóstico Inicial (Operador)</label>
-                                <textarea id="ticket-note" class="glass-input" style="height: 60px; resize: vertical;" placeholder="Detalles de la falla, span de potencia, recomendaciones de reparación..."></textarea>
+                                <textarea id="ticket-note" class="glass-input" style="height: 60px; resize: vertical;"
+                                    placeholder="Detalles de la falla, span de potencia, recomendaciones de reparación..."></textarea>
                             </div>
 
                             <div class="form-group">
@@ -1157,9 +1227,11 @@
                         <div class="table-header">
                             <h3>2. Ingeniero: Tickets Asignados & Histórico</h3>
                         </div>
-                        <div class="maint-timeline" id="tickets-timeline-container" style="flex: 1; overflow-y: auto; padding-right: 10px;">
+                        <div class="maint-timeline" id="tickets-timeline-container"
+                            style="flex: 1; overflow-y: auto; padding-right: 10px;">
                             <!-- Cargado dinámicamente desde el backend -->
-                            <p style="text-align: center; color: var(--text-dim); margin-top: 20px;">Cargando tickets...</p>
+                            <p style="text-align: center; color: var(--text-dim); margin-top: 20px;">Cargando tickets...
+                            </p>
                         </div>
                     </div>
 
@@ -1176,24 +1248,34 @@
 
                         <form id="resolution-form">
                             <!-- ATREC clearing proposal -->
-                            <div id="resolution-clearing-proposal" class="hidden" style="background: rgba(0, 230, 115, 0.1); border: 1px solid rgba(0, 230, 115, 0.3); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                            <div id="resolution-clearing-proposal" class="hidden"
+                                style="background: rgba(0, 230, 115, 0.1); border: 1px solid rgba(0, 230, 115, 0.3); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
                                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="font-size: 0.8rem; color: #00e673; font-weight: bold; display: flex; align-items: center; gap: 6px;">
-                                        <i data-lucide="check-circle" style="width: 14px; height: 14px; color: #00e673;"></i> ¡Alarma de origen despejada (Cleared)!
+                                    <span
+                                        style="font-size: 0.8rem; color: #00e673; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                                        <i data-lucide="check-circle"
+                                            style="width: 14px; height: 14px; color: #00e673;"></i> ¡Alarma de origen
+                                        despejada (Cleared)!
                                     </span>
-                                    <button type="button" id="btn-resolve-proposed" class="btn btn-secondary glass-btn" style="padding: 4px 8px; font-size: 11px; color: #00e673; border-color: rgba(0, 230, 115, 0.4); background: rgba(0, 230, 115, 0.05);">
+                                    <button type="button" id="btn-resolve-proposed" class="btn btn-secondary glass-btn"
+                                        style="padding: 4px 8px; font-size: 11px; color: #00e673; border-color: rgba(0, 230, 115, 0.4); background: rgba(0, 230, 115, 0.05);">
                                         Proponer Resuelto
                                     </button>
                                 </div>
-                                <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 6px; margin-bottom: 0;">
-                                    La alarma vinculada <span id="proposal-alarm-id" style="font-family: monospace; font-weight: bold; color: var(--text-main);"></span> ya no está activa en la consola. Se propone marcar este ticket como "Resuelto (Pendiente de Validación)".
+                                <p
+                                    style="font-size: 0.75rem; color: var(--text-dim); margin-top: 6px; margin-bottom: 0;">
+                                    La alarma vinculada <span id="proposal-alarm-id"
+                                        style="font-family: monospace; font-weight: bold; color: var(--text-main);"></span>
+                                    ya no está activa en la consola. Se propone marcar este ticket como "Resuelto
+                                    (Pendiente de Validación)".
                                 </p>
                             </div>
 
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px;">
                                 <div class="form-group">
                                     <label for="resolution-type">Tipo de Resolución</label>
-                                    <select id="resolution-type" class="glass-input" onchange="toggleResolutionFields()">
+                                    <select id="resolution-type" class="glass-input"
+                                        onchange="toggleResolutionFields()">
                                         <option value="field">Resolución En Sitio (Con Visita a Campo)</option>
                                         <option value="remote">Resolución Remota (Sin Visita a Campo)</option>
                                     </select>
@@ -1207,11 +1289,13 @@
                                 </div>
                                 <div class="form-group" id="remote-evidence-group" style="display: none;">
                                     <label for="remote-evidence">Evidencia Remota (Adjuntar Log/Script/Comandos)</label>
-                                    <input type="text" id="remote-evidence" class="glass-input" placeholder="Ej. cp /usr/g/config/backup/ctdi.cfg /usr/g/config/">
+                                    <input type="text" id="remote-evidence" class="glass-input"
+                                        placeholder="Ej. cp /usr/g/config/backup/ctdi.cfg /usr/g/config/">
                                 </div>
                             </div>
 
-                            <div id="field-resolution-details" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px;">
+                            <div id="field-resolution-details"
+                                style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 20px;">
                                 <div class="form-group">
                                     <label for="review-general">Revisión General en Sitio</label>
                                     <textarea id="review-general" class="glass-input"
@@ -1227,110 +1311,154 @@
                             </div>
 
                             <!-- Parametrización del Ciclo de Mantenimiento para la IA -->
-                            <div id="maintenance-lifecycle-panel" class="glass-panel" style="margin-bottom: 20px; padding: 15px; border-left: 3px solid var(--accent); background: rgba(255, 255, 255, 0.01);">
-                                <h4 style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                                    <i data-lucide="git-branch" style="color: var(--accent); width: 18px; height: 18px;"></i>
+                            <div id="maintenance-lifecycle-panel" class="glass-panel"
+                                style="margin-bottom: 20px; padding: 15px; border-left: 3px solid var(--accent); background: rgba(255, 255, 255, 0.01);">
+                                <h4
+                                    style="margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                    <i data-lucide="git-branch"
+                                        style="color: var(--accent); width: 18px; height: 18px;"></i>
                                     Ciclo de Mantenimiento y Escalación (Parametrización IA)
                                 </h4>
 
                                 <!-- 1. Troubleshooting Nivel 1 -->
-                                <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 12px;">
-                                    <h5 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 0.85rem;">1. Troubleshooting Nivel 1 (Fallas Menores / Warnings)</h5>
+                                <div
+                                    style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 12px;">
+                                    <h5 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 0.85rem;">1.
+                                        Troubleshooting Nivel 1 (Fallas Menores / Warnings)</h5>
                                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
                                         <div class="form-group">
-                                            <label for="l1-done" style="font-size: 0.75rem;">¿Realizado Troubleshooting L1?</label>
-                                            <select id="l1-done" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;">
+                                            <label for="l1-done" style="font-size: 0.75rem;">¿Realizado Troubleshooting
+                                                L1?</label>
+                                            <select id="l1-done" class="glass-input"
+                                                style="padding: 6px 12px; font-size: 0.8rem;">
                                                 <option value="no">No</option>
                                                 <option value="yes">Sí</option>
                                             </select>
                                         </div>
                                         <div class="form-group">
-                                            <label for="l1-success" style="font-size: 0.75rem;">¿Procedimiento L1 Exitoso?</label>
-                                            <select id="l1-success" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;">
+                                            <label for="l1-success" style="font-size: 0.75rem;">¿Procedimiento L1
+                                                Exitoso?</label>
+                                            <select id="l1-success" class="glass-input"
+                                                style="padding: 6px 12px; font-size: 0.8rem;">
                                                 <option value="yes">Sí (Solución estándar)</option>
                                                 <option value="no">No (Requiere análisis)</option>
                                             </select>
                                         </div>
                                         <div class="form-group">
-                                            <label for="l1-masked" style="font-size: 0.75rem;">¿Falla Enmascarada?</label>
-                                            <select id="l1-masked" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;">
+                                            <label for="l1-masked" style="font-size: 0.75rem;">¿Falla
+                                                Enmascarada?</label>
+                                            <select id="l1-masked" class="glass-input"
+                                                style="padding: 6px 12px; font-size: 0.8rem;">
                                                 <option value="no">No detectada</option>
                                                 <option value="yes">Sí, oculta otra falla</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="form-group" style="margin-top: 8px;">
-                                        <label for="l1-attempt" style="font-size: 0.75rem;">Procedimiento L1 Intentado</label>
-                                        <input type="text" id="l1-attempt" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;" placeholder="Ej. Ciclado de energía, purga rápida de aire de refrigeración...">
+                                        <label for="l1-attempt" style="font-size: 0.75rem;">Procedimiento L1
+                                            Intentado</label>
+                                        <input type="text" id="l1-attempt" class="glass-input"
+                                            style="padding: 6px 12px; font-size: 0.8rem;"
+                                            placeholder="Ej. Ciclado de energía, purga rápida de aire de refrigeración...">
                                     </div>
                                 </div>
 
                                 <!-- 2. Escalación a Nivel 2 -->
-                                <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 12px;">
-                                    <h5 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 0.85rem;">2. Escalación e Ingeniería Especializada (Nivel 2)</h5>
+                                <div
+                                    style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 12px;">
+                                    <h5 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 0.85rem;">2.
+                                        Escalación e Ingeniería Especializada (Nivel 2)</h5>
                                     <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px;">
                                         <div class="form-group">
-                                            <label for="l2-escalated" style="font-size: 0.75rem;">¿Escalar a Nivel 2?</label>
-                                            <select id="l2-escalated" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;" onchange="toggleL2Fields()">
+                                            <label for="l2-escalated" style="font-size: 0.75rem;">¿Escalar a Nivel
+                                                2?</label>
+                                            <select id="l2-escalated" class="glass-input"
+                                                style="padding: 6px 12px; font-size: 0.8rem;"
+                                                onchange="toggleL2Fields()">
                                                 <option value="no">No</option>
                                                 <option value="yes">Sí, derivar caso</option>
                                             </select>
                                         </div>
                                         <div class="form-group L2-field" style="display: none;">
-                                            <label for="l2-engineer" style="font-size: 0.75rem;">Ingeniero Nivel 2 Asignado</label>
-                                            <input type="text" id="l2-engineer" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;" placeholder="Nombre del especialista L2">
+                                            <label for="l2-engineer" style="font-size: 0.75rem;">Ingeniero Nivel 2
+                                                Asignado</label>
+                                            <input type="text" id="l2-engineer" class="glass-input"
+                                                style="padding: 6px 12px; font-size: 0.8rem;"
+                                                placeholder="Nombre del especialista L2">
                                         </div>
                                     </div>
                                     <div class="form-group L2-field" style="margin-top: 8px; display: none;">
-                                        <label for="l2-diagnosis" style="font-size: 0.75rem;">Diagnóstico Consecuente de Nivel 2</label>
-                                        <textarea id="l2-diagnosis" class="glass-input" style="height: 50px; font-size: 0.8rem;" placeholder="Describa la falla consecuente o real detectada por el especialista..."></textarea>
+                                        <label for="l2-diagnosis" style="font-size: 0.75rem;">Diagnóstico Consecuente de
+                                            Nivel 2</label>
+                                        <textarea id="l2-diagnosis" class="glass-input"
+                                            style="height: 50px; font-size: 0.8rem;"
+                                            placeholder="Describa la falla consecuente o real detectada por el especialista..."></textarea>
                                     </div>
                                 </div>
 
                                 <!-- 3. Repuestos y Gestión de Importación -->
-                                <div style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 12px;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                        <h5 style="margin: 0; color: var(--text-main); font-size: 0.85rem;">3. Repuestos y Gestión de Inventario (Importación y Adquisición)</h5>
+                                <div
+                                    style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; margin-bottom: 12px;">
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <h5 style="margin: 0; color: var(--text-main); font-size: 0.85rem;">3. Repuestos
+                                            y Gestión de Inventario (Importación y Adquisición)</h5>
                                         <div style="display: flex; align-items: center; gap: 8px;">
-                                            <label for="requires-parts" style="font-size: 0.75rem; margin-bottom: 0;">¿Requiere repuestos?</label>
-                                            <select id="requires-parts" class="glass-input" style="padding: 2px 8px; font-size: 0.75rem; width: auto;" onchange="togglePartsFields()">
+                                            <label for="requires-parts"
+                                                style="font-size: 0.75rem; margin-bottom: 0;">¿Requiere
+                                                repuestos?</label>
+                                            <select id="requires-parts" class="glass-input"
+                                                style="padding: 2px 8px; font-size: 0.75rem; width: auto;"
+                                                onchange="togglePartsFields()">
                                                 <option value="no">No</option>
                                                 <option value="yes">Sí</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div id="parts-section" style="display: none;">
-                                        <div id="parts-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
+                                        <div id="parts-container"
+                                            style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px;">
                                             <!-- Lista dinámica de repuestos -->
                                         </div>
-                                        <button type="button" id="btn-add-part" class="btn glass-btn" style="padding: 4px 8px; font-size: 11px;" onclick="addPartRow()">
-                                            <i data-lucide="plus" style="width: 12px; height: 12px; margin-right: 4px;"></i> Solicitar Otra Parte/Módulo
+                                        <button type="button" id="btn-add-part" class="btn glass-btn"
+                                            style="padding: 4px 8px; font-size: 11px;" onclick="addPartRow()">
+                                            <i data-lucide="plus"
+                                                style="width: 12px; height: 12px; margin-right: 4px;"></i> Solicitar
+                                            Otra Parte/Módulo
                                         </button>
                                     </div>
                                 </div>
 
                                 <!-- 4. Calibración y Calidad de Imagen -->
                                 <div>
-                                    <h5 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 0.85rem;">4. Calibración y Validación de Calidad de Imagen</h5>
+                                    <h5 style="margin: 0 0 8px 0; color: var(--text-main); font-size: 0.85rem;">4.
+                                        Calibración y Validación de Calidad de Imagen</h5>
                                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
                                         <div class="form-group">
-                                            <label for="requires-calib" style="font-size: 0.75rem;">¿Requiere Calibración?</label>
-                                            <select id="requires-calib" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;" onchange="toggleCalibrationFields()">
+                                            <label for="requires-calib" style="font-size: 0.75rem;">¿Requiere
+                                                Calibración?</label>
+                                            <select id="requires-calib" class="glass-input"
+                                                style="padding: 6px 12px; font-size: 0.8rem;"
+                                                onchange="toggleCalibrationFields()">
                                                 <option value="no">No</option>
                                                 <option value="yes">Sí</option>
                                             </select>
                                         </div>
                                         <div class="form-group calib-field" style="display: none;">
-                                            <label for="calib-status" style="font-size: 0.75rem;">Estado de Calibración</label>
-                                            <select id="calib-status" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;">
+                                            <label for="calib-status" style="font-size: 0.75rem;">Estado de
+                                                Calibración</label>
+                                            <select id="calib-status" class="glass-input"
+                                                style="padding: 6px 12px; font-size: 0.8rem;">
                                                 <option value="approved">Aprobado (Estándar Clínico)</option>
                                                 <option value="failed">No Aprobado (Requiere Ajuste)</option>
                                                 <option value="monitoring">Bajo Monitoreo de Calidad</option>
                                             </select>
                                         </div>
                                         <div class="form-group calib-field" style="display: none;">
-                                            <label for="client-approval" style="font-size: 0.75rem;">Aprobación del Cliente</label>
-                                            <select id="client-approval" class="glass-input" style="padding: 6px 12px; font-size: 0.8rem;">
+                                            <label for="client-approval" style="font-size: 0.75rem;">Aprobación del
+                                                Cliente</label>
+                                            <select id="client-approval" class="glass-input"
+                                                style="padding: 6px 12px; font-size: 0.8rem;">
                                                 <option value="yes">Sí, conforme</option>
                                                 <option value="no">No, disconforme</option>
                                                 <option value="monitoring">En etapa de monitoreo</option>
@@ -1338,8 +1466,11 @@
                                         </div>
                                     </div>
                                     <div class="form-group calib-field" style="margin-top: 8px; display: none;">
-                                        <label for="calib-notes" style="font-size: 0.75rem;">Notas de Calidad de Imagen e Inspección Visual</label>
-                                        <textarea id="calib-notes" class="glass-input" style="height: 50px; font-size: 0.8rem;" placeholder="Comentarios sobre ruido, artefactos, resolución espacial de las imágenes de prueba..."></textarea>
+                                        <label for="calib-notes" style="font-size: 0.75rem;">Notas de Calidad de Imagen
+                                            e Inspección Visual</label>
+                                        <textarea id="calib-notes" class="glass-input"
+                                            style="height: 50px; font-size: 0.8rem;"
+                                            placeholder="Comentarios sobre ruido, artefactos, resolución espacial de las imágenes de prueba..."></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -1375,28 +1506,40 @@
                     </div>
                 </header>
 
-                <div class="classifications-grid" style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
+                <div class="classifications-grid"
+                    style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
                     <!-- FORM: AGREGAR NUEVO AL CATALOGO -->
                     <div class="admin-card glass-panel" style="padding: 24px;">
-                        <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; color: var(--text-main);">
+                        <h3
+                            style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; color: var(--text-main);">
                             <i data-lucide="plus-circle" style="color: var(--accent); width: 20px; height: 20px;"></i>
                             Registrar Nuevo Evento
                         </h3>
-                        <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; line-height: 1.4;">
+                        <p class="subtitle"
+                            style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; line-height: 1.4;">
                             Agregue nuevos códigos de alarma y severidades por defecto aprendidos de nuevos equipos.
                         </p>
                         <form id="form-add-catalog" style="display: flex; flex-direction: column; gap: 16px;">
                             <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                                <label for="catalog-code" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Código de Alarma (TCE Code)</label>
-                                <input type="text" id="catalog-code" placeholder="Ej: MITF.RESONATOR.HE_LOW" required class="glass-input" style="width: 100%;">
+                                <label for="catalog-code"
+                                    style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Código de
+                                    Alarma (TCE Code)</label>
+                                <input type="text" id="catalog-code" placeholder="Ej: MITF.RESONATOR.HE_LOW" required
+                                    class="glass-input" style="width: 100%;">
                             </div>
                             <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                                <label for="catalog-label" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Nombre / Etiqueta del Evento</label>
-                                <input type="text" id="catalog-label" placeholder="Ej: Nivel helio por debajo de 60%" required class="glass-input" style="width: 100%;">
+                                <label for="catalog-label"
+                                    style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Nombre /
+                                    Etiqueta del Evento</label>
+                                <input type="text" id="catalog-label" placeholder="Ej: Nivel helio por debajo de 60%"
+                                    required class="glass-input" style="width: 100%;">
                             </div>
                             <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                                <label for="catalog-subsystem" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Subsistema Asociado</label>
-                                <select id="catalog-subsystem" required class="glass-input" style="width: 100%; background: var(--bg-card); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <label for="catalog-subsystem"
+                                    style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Subsistema
+                                    Asociado</label>
+                                <select id="catalog-subsystem" required class="glass-input"
+                                    style="width: 100%; background: var(--bg-card); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.1);">
                                     <option value="tube">Tubo (TUBE)</option>
                                     <option value="hv_generator">Generador (HV_GENERATOR)</option>
                                     <option value="das">Adquisición (DAS)</option>
@@ -1413,18 +1556,26 @@
                                 </select>
                             </div>
                             <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                                <label for="catalog-severity" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Severidad por Defecto</label>
-                                <select id="catalog-severity" required class="glass-input" style="width: 100%; background: var(--bg-card); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <label for="catalog-severity"
+                                    style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Severidad por
+                                    Defecto</label>
+                                <select id="catalog-severity" required class="glass-input"
+                                    style="width: 100%; background: var(--bg-card); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.1);">
                                     <option value="CRITICAL">CRITICAL</option>
                                     <option value="WARNING">WARNING</option>
                                     <option value="INFO">INFO</option>
                                 </select>
                             </div>
                             <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                                <label for="catalog-desc" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Descripción / Guía Diagnóstica</label>
-                                <textarea id="catalog-desc" placeholder="Detalles o sugerencias de reparación..." required class="glass-input" style="width: 100%; min-height: 80px; resize: vertical;"></textarea>
+                                <label for="catalog-desc"
+                                    style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Descripción /
+                                    Guía Diagnóstica</label>
+                                <textarea id="catalog-desc" placeholder="Detalles o sugerencias de reparación..."
+                                    required class="glass-input"
+                                    style="width: 100%; min-height: 80px; resize: vertical;"></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary" style="margin-top: 8px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <button type="submit" class="btn btn-primary"
+                                style="margin-top: 8px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                 <i data-lucide="plus"></i> Registrar Evento
                             </button>
                         </form>
@@ -1437,7 +1588,8 @@
                             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                                 <div class="search-box">
                                     <i data-lucide="search"></i>
-                                    <input type="text" id="classification-search" placeholder="Filtrar códigos..." class="glass-input">
+                                    <input type="text" id="classification-search" placeholder="Filtrar códigos..."
+                                        class="glass-input">
                                 </div>
                                 <button id="btn-save-classifications" class="btn btn-primary">
                                     Aplicar Reglas de Alertas
@@ -1445,7 +1597,8 @@
                             </div>
                         </div>
                         <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px;">
-                            Las alarmas configuradas como <strong>IGNORE</strong> no se contarán en las métricas de fallas ni en la lista de logs, permitiendo reducir drásticamente el ruido del sistema.
+                            Las alarmas configuradas como <strong>IGNORE</strong> no se contarán en las métricas de
+                            fallas ni en la lista de logs, permitiendo reducir drásticamente el ruido del sistema.
                         </p>
                         <div class="table-wrapper">
                             <table class="glass-table classification-table">
@@ -1470,22 +1623,29 @@
 
                 <!-- HEALTH MODELING CONFIGURATION & VALIDATOR -->
                 <div class="admin-card glass-panel" style="margin-top: 24px; padding: 24px;">
-                    <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; color: var(--text-main);">
+                    <h3
+                        style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; color: var(--text-main);">
                         <i data-lucide="activity" style="color: var(--accent); width: 20px; height: 20px;"></i>
                         Health Modeling Framework & Bounded Formulations
                     </h3>
-                    <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; line-height: 1.4;">
-                        Configure las constantes, severidades y pesos de criticidad de los subsistemas, y valide los cálculos matemáticos en tiempo real.
+                    <p class="subtitle"
+                        style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; line-height: 1.4;">
+                        Configure las constantes, severidades y pesos de criticidad de los subsistemas, y valide los
+                        cálculos matemáticos en tiempo real.
                     </p>
 
                     <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; align-items: start;">
                         <!-- CONFIGURATION FORM -->
-                        <form id="form-health-config" style="display: flex; flex-direction: column; gap: 16px; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 12px;">
-                            <h4 style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px;">Parámetros del Algoritmo</h4>
-                            
+                        <form id="form-health-config"
+                            style="display: flex; flex-direction: column; gap: 16px; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 12px;">
+                            <h4
+                                style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px;">
+                                Parámetros del Algoritmo</h4>
+
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
-                                    <label style="font-size: 0.75rem; color: var(--text-dim);">rated_mAs_capacity</label>
+                                    <label
+                                        style="font-size: 0.75rem; color: var(--text-dim);">rated_mAs_capacity</label>
                                     <input type="number" id="cfg-mas-capacity" class="glass-input" required>
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
@@ -1497,16 +1657,21 @@
                                     <input type="number" id="cfg-max-thermal" class="glass-input" required>
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
-                                    <label style="font-size: 0.75rem; color: var(--text-dim);">lambda_decay (1/hr)</label>
-                                    <input type="number" step="0.0001" id="cfg-lambda-decay" class="glass-input" required>
+                                    <label style="font-size: 0.75rem; color: var(--text-dim);">lambda_decay
+                                        (1/hr)</label>
+                                    <input type="number" step="0.0001" id="cfg-lambda-decay" class="glass-input"
+                                        required>
                                 </div>
                             </div>
 
-                            <h4 style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px; margin-top: 10px;">Pesos de Gravedad de Eventos (w_i)</h4>
+                            <h4
+                                style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px; margin-top: 10px;">
+                                Pesos de Gravedad de Eventos (w_i)</h4>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">CRITICAL</label>
-                                    <input type="number" step="0.01" id="cfg-weight-critical" class="glass-input" required>
+                                    <input type="number" step="0.01" id="cfg-weight-critical" class="glass-input"
+                                        required>
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">MAJOR_ERROR</label>
@@ -1514,7 +1679,8 @@
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">WARNING</label>
-                                    <input type="number" step="0.01" id="cfg-weight-warning" class="glass-input" required>
+                                    <input type="number" step="0.01" id="cfg-weight-warning" class="glass-input"
+                                        required>
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">INFO</label>
@@ -1522,7 +1688,9 @@
                                 </div>
                             </div>
 
-                            <h4 style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px; margin-top: 10px;">Pesos de Criticidad del Subsistema (alpha_s)</h4>
+                            <h4
+                                style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px; margin-top: 10px;">
+                                Pesos de Criticidad del Subsistema (alpha_s)</h4>
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">Tubo</label>
@@ -1530,7 +1698,8 @@
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">Generador</label>
-                                    <input type="number" step="0.01" id="cfg-alpha-generator" class="glass-input" required>
+                                    <input type="number" step="0.01" id="cfg-alpha-generator" class="glass-input"
+                                        required>
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">DAS</label>
@@ -1542,11 +1711,13 @@
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">Enfriamiento</label>
-                                    <input type="number" step="0.01" id="cfg-alpha-cooling" class="glass-input" required>
+                                    <input type="number" step="0.01" id="cfg-alpha-cooling" class="glass-input"
+                                        required>
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">Colimador</label>
-                                    <input type="number" step="0.01" id="cfg-alpha-collimator" class="glass-input" required>
+                                    <input type="number" step="0.01" id="cfg-alpha-collimator" class="glass-input"
+                                        required>
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">TGP</label>
@@ -1566,47 +1737,62 @@
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.75rem; color: var(--text-dim);">Consola</label>
-                                    <input type="number" step="0.01" id="cfg-alpha-console" class="glass-input" required>
+                                    <input type="number" step="0.01" id="cfg-alpha-console" class="glass-input"
+                                        required>
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-primary" style="margin-top: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <button type="submit" class="btn btn-primary"
+                                style="margin-top: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
                                 <i data-lucide="save"></i> Guardar Parámetros de Salud
                             </button>
                         </form>
 
                         <!-- REALTIME VALIDATOR / SANDBOX -->
-                        <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; height: 100%; display: flex; flex-direction: column; gap: 16px;">
-                            <h4 style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px;">Validador Matemático (Sandbox en Tiempo Real)</h4>
-                            
-                            <div style="display: flex; flex-direction: column; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.5; color: var(--text-main);">
-                                <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+                        <div
+                            style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; height: 100%; display: flex; flex-direction: column; gap: 16px;">
+                            <h4
+                                style="font-size: 0.9rem; color: var(--accent); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; margin-bottom: 10px;">
+                                Validador Matemático (Sandbox en Tiempo Real)</h4>
+
+                            <div
+                                style="display: flex; flex-direction: column; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.5; color: var(--text-main);">
+                                <div
+                                    style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
                                     <strong style="color: #ff8c00;">1. Tube Health Index (THI)</strong>
-                                    <div style="margin-top: 6px; font-size: 0.72rem; color: var(--text-dim); line-height: 1.3;">
+                                    <div
+                                        style="margin-top: 6px; font-size: 0.72rem; color: var(--text-dim); line-height: 1.3;">
                                         THI_base = max(0, min(1, 1 - (mAs_acumulado / capacity)))<br>
                                         THI = max(0, min(1, THI_base * (1 - k_thermal * N_thermal / N_max_thermal)))
                                     </div>
-                                    <div id="validator-thi-math" style="margin-top: 8px; color: #8cc6ff; white-space: pre-wrap; word-break: break-all;">
+                                    <div id="validator-thi-math"
+                                        style="margin-top: 8px; color: #8cc6ff; white-space: pre-wrap; word-break: break-all;">
                                         Calculando...
                                     </div>
                                 </div>
 
-                                <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+                                <div
+                                    style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
                                     <strong style="color: #ff8c00;">2. Subsystem Health Index (SHI)</strong>
-                                    <div style="margin-top: 6px; font-size: 0.72rem; color: var(--text-dim); line-height: 1.3;">
+                                    <div
+                                        style="margin-top: 6px; font-size: 0.72rem; color: var(--text-dim); line-height: 1.3;">
                                         SHI_s = max(0, 100 * (1 - min(1, Σ (w_i * e^(-λ * δt_i)))))
                                     </div>
-                                    <div id="validator-shi-math" style="margin-top: 8px; color: #8cc6ff; max-height: 160px; overflow-y: auto; white-space: pre-wrap; font-size: 0.75rem;">
+                                    <div id="validator-shi-math"
+                                        style="margin-top: 8px; color: #8cc6ff; max-height: 160px; overflow-y: auto; white-space: pre-wrap; font-size: 0.75rem;">
                                         Calculando...
                                     </div>
                                 </div>
 
-                                <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+                                <div
+                                    style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
                                     <strong style="color: #ff8c00;">3. Device Health Index (DHI)</strong>
-                                    <div style="margin-top: 6px; font-size: 0.72rem; color: var(--text-dim); line-height: 1.3;">
+                                    <div
+                                        style="margin-top: 6px; font-size: 0.72rem; color: var(--text-dim); line-height: 1.3;">
                                         DHI = Σ (alpha_s * SHI_s) / Σ alpha_s
                                     </div>
-                                    <div id="validator-dhi-math" style="margin-top: 8px; color: #8cc6ff; white-space: pre-wrap;">
+                                    <div id="validator-dhi-math"
+                                        style="margin-top: 8px; color: #8cc6ff; white-space: pre-wrap;">
                                         Calculando...
                                     </div>
                                 </div>
@@ -1629,60 +1815,97 @@
                     <form id="settings-form">
                         <div class="settings-grid">
                             <!-- LEFT CARD: GENERAL PARAMETERS -->
-                            <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
-                                <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
-                                    <i data-lucide="sliders" style="color: var(--primary); width: 20px; height: 20px;"></i>
+                            <div class="glass-panel"
+                                style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+                                <h3
+                                    style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                                    <i data-lucide="sliders"
+                                        style="color: var(--primary); width: 20px; height: 20px;"></i>
                                     Parámetros del Colector
                                 </h3>
-                                <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4;">
-                                    Configure la frecuencia de actualización y el modo de recolección de telemetría de los equipos.
+                                <p class="subtitle"
+                                    style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4;">
+                                    Configure la frecuencia de actualización y el modo de recolección de telemetría de
+                                    los equipos.
                                 </p>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                                    <label style="font-size: 0.82rem; font-weight: 500; color: var(--text-dim);">Intervalo de Refresco (Segundos)</label>
-                                    <input type="number" class="glass-input" value="15" min="5" max="300" id="setting-refresh" style="width: 100%;">
+                                    <label
+                                        style="font-size: 0.82rem; font-weight: 500; color: var(--text-dim);">Intervalo
+                                        de Refresco (Segundos)</label>
+                                    <input type="number" class="glass-input" value="15" min="5" max="300"
+                                        id="setting-refresh" style="width: 100%;">
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
-                                    <label style="font-size: 0.82rem; font-weight: 500; color: var(--text-dim);">Modo de Operación / Sondeo</label>
+                                    <label style="font-size: 0.82rem; font-weight: 500; color: var(--text-dim);">Modo de
+                                        Operación / Sondeo</label>
                                     <select id="setting-opmode" class="glass-input" style="width: 100%;">
                                         <option value="online">Modo en Línea (Lectura directa GE)</option>
-                                        <option value="service">Modo Servicio (Multimarca Philips/Siemens/GE Avanzado)</option>
+                                        <option value="service">Modo Servicio (Multimarca Philips/Siemens/GE Avanzado)
+                                        </option>
                                     </select>
                                 </div>
-                                <button type="submit" class="btn btn-primary" style="margin-top: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: #000; border: none; font-weight: 700; padding: 10px 16px;">
+                                <button type="submit" class="btn btn-primary"
+                                    style="margin-top: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: #000; border: none; font-weight: 700; padding: 10px 16px;">
                                     <i data-lucide="save" style="width: 16px; height: 16px;"></i> Guardar Ajustes
                                 </button>
                             </div>
 
                             <!-- RIGHT CARD: EQUIPMENTS TO MONITOR -->
-                            <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; min-height: 380px; min-width: 0; width: 100%;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+                            <div class="glass-panel"
+                                style="padding: 24px; display: flex; flex-direction: column; gap: 16px; min-height: 380px; min-width: 0; width: 100%;">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
                                     <div>
-                                        <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin: 0;">
-                                            <i data-lucide="cpu" style="color: var(--secondary); width: 20px; height: 20px;"></i>
+                                        <h3
+                                            style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin: 0;">
+                                            <i data-lucide="cpu"
+                                                style="color: var(--secondary); width: 20px; height: 20px;"></i>
                                             Equipos a Monitorear (NEs)
                                         </h3>
-                                        <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-top: 2px;">
+                                        <p class="subtitle"
+                                            style="font-size: 0.8rem; color: var(--text-dim); margin-top: 2px;">
                                             Elementos de red clínicos activos bajo monitoreo por el colector MITF
                                         </p>
                                     </div>
-                                    <button type="button" id="btn-add-device" class="btn glass-btn font-ui" style="padding: 0.45rem 1rem; font-size: 0.8rem; background: rgba(0,210,255,0.1); border-color: var(--primary); color: var(--primary); display: flex; align-items: center; gap: 6px;">
-                                        <i data-lucide="plus-circle" style="width: 14px; height: 14px;"></i> + Añadir Equipo
+                                    <button type="button" id="btn-add-device" class="btn glass-btn font-ui"
+                                        style="padding: 0.45rem 1rem; font-size: 0.8rem; background: rgba(0,210,255,0.1); border-color: var(--primary); color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                                        <i data-lucide="plus-circle" style="width: 14px; height: 14px;"></i> + Añadir
+                                        Equipo
                                     </button>
                                 </div>
-                                
+
                                 <div class="table-responsive" style="overflow-x: auto; width: 100%; margin-top: 8px;">
-                                    <table class="glass-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <table class="glass-table"
+                                        style="width: 100%; border-collapse: collapse; text-align: left;">
                                         <thead>
                                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Nombre</th>
-                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Marca</th>
-                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">IP / Host SSH</th>
-                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Usuario</th>
-                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Dir Logs</th>
-                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Modo SSH</th>
-                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Monitoreo</th>
-                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Conectividad</th>
-                                                <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim); text-align: right;">Acciones</th>
+                                                <th
+                                                    style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                    Nombre</th>
+                                                <th
+                                                    style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                    Marca</th>
+                                                <th
+                                                    style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                    IP / Host SSH</th>
+                                                <th
+                                                    style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                    Usuario</th>
+                                                <th
+                                                    style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                    Dir Logs</th>
+                                                <th
+                                                    style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                    Modo SSH</th>
+                                                <th
+                                                    style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                    Monitoreo</th>
+                                                <th
+                                                    style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                    Conectividad</th>
+                                                <th
+                                                    style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim); text-align: right;">
+                                                    Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody id="devices-config-list">
@@ -1753,6 +1976,61 @@
                 </div>
             </section>
 
+            <!-- VIEW: GESTIÓN DE USUARIOS -->
+            <section id="users" class="view-content">
+                <header class="glass-header"
+                    style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="header-title">
+                        <h1>Gestión de Usuarios</h1>
+                        <p class="subtitle">Administre los perfiles de usuario, credenciales y sus respectivos roles en
+                            el sistema</p>
+                    </div>
+                    <button class="btn btn-primary" id="btn-create-user"
+                        style="display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i> Crear Usuario
+                    </button>
+                </header>
+
+                <div class="table-box glass-panel" style="margin-top: 24px; padding: 24px;">
+                    <div class="table-header"
+                        style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Usuarios Registrados en el Sistema</h3>
+                        <div class="search-box">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="users-search" placeholder="Buscar usuario..." class="glass-input">
+                        </div>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table class="glass-table" id="users-table"
+                            style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                                    <th
+                                        style="padding: 12px; font-weight: 600; color: var(--text-dim); font-size: 0.85rem;">
+                                        Usuario</th>
+                                    <th
+                                        style="padding: 12px; font-weight: 600; color: var(--text-dim); font-size: 0.85rem;">
+                                        Nombre Completo</th>
+                                    <th
+                                        style="padding: 12px; font-weight: 600; color: var(--text-dim); font-size: 0.85rem;">
+                                        Rol</th>
+                                    <th
+                                        style="padding: 12px; font-weight: 600; color: var(--text-dim); font-size: 0.85rem;">
+                                        Contraseña</th>
+                                    <th
+                                        style="padding: 12px; font-weight: 600; color: var(--text-dim); font-size: 0.85rem; text-align: right;">
+                                        Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Creado dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
         </main>
 
         <!-- Progress Auto-Refresh Ring Bubble -->
@@ -1807,11 +2085,14 @@
                     <form id="device-modal-form">
                         <input type="hidden" id="device-id-input">
                         <div class="form-group" style="margin-bottom: 12px;">
-                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Nombre del Equipo</label>
-                            <input type="text" id="device-name-input" class="glass-input" required placeholder="Ej: Tomógrafo General Electric" style="width: 100%;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Nombre del
+                                Equipo</label>
+                            <input type="text" id="device-name-input" class="glass-input" required
+                                placeholder="Ej: Tomógrafo General Electric" style="width: 100%;">
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
-                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Marca / Fabricante</label>
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Marca /
+                                Fabricante</label>
                             <select id="device-brand-input" class="glass-input" style="width: 100%;">
                                 <option value="GE">General Electric</option>
                                 <option value="Siemens">Siemens</option>
@@ -1821,53 +2102,127 @@
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
-                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Dirección IP o Host SSH</label>
-                            <input type="text" id="device-host-input" class="glass-input" required placeholder="Ej: 192.168.1.107:22" style="width: 100%;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Dirección IP o Host
+                                SSH</label>
+                            <input type="text" id="device-host-input" class="glass-input" required
+                                placeholder="Ej: 192.168.1.107:22" style="width: 100%;">
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
                             <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Usuario SSH</label>
-                            <input type="text" id="device-user-input" class="glass-input" required placeholder="Ej: centos" style="width: 100%;">
+                            <input type="text" id="device-user-input" class="glass-input" required
+                                placeholder="Ej: centos" style="width: 100%;">
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
-                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Contraseña SSH</label>
-                            <input type="password" id="device-password-input" class="glass-input" placeholder="Omitir si no se modifica" style="width: 100%;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Contraseña
+                                SSH</label>
+                            <input type="password" id="device-password-input" class="glass-input"
+                                placeholder="Omitir si no se modifica" style="width: 100%;">
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
-                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Directorio Remoto de Logs</label>
-                            <input type="text" id="device-dir-input" class="glass-input" required placeholder="Ej: /usr/g/service/log" style="width: 100%;">
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Directorio Remoto de
+                                Logs</label>
+                            <input type="text" id="device-dir-input" class="glass-input" required
+                                placeholder="Ej: /usr/g/service/log" style="width: 100%;">
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
-                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Modo de Conexión SSH</label>
+                            <label style="display: block; font-size: 0.85rem; margin-bottom: 4px;">Modo de Conexión
+                                SSH</label>
                             <select id="device-sshmode-input" class="glass-input" style="width: 100%;">
                                 <option value="legacy">Legacy (Cifradores antiguos)</option>
                                 <option value="modern">Modern (Cifradores estándar)</option>
                             </select>
                         </div>
-                        <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.5rem; display: flex; margin-bottom: 12px;">
+                        <div class="form-group"
+                            style="flex-direction: row; align-items: center; gap: 0.5rem; display: flex; margin-bottom: 12px;">
                             <input type="checkbox" id="device-active-input" checked style="width: auto;">
-                            <label for="device-active-input" style="margin-bottom: 0; cursor: pointer; font-size: 0.85rem;">¿Habilitar Monitoreo Activo?</label>
+                            <label for="device-active-input"
+                                style="margin-bottom: 0; cursor: pointer; font-size: 0.85rem;">¿Habilitar Monitoreo
+                                Activo?</label>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+                <div class="modal-footer"
+                    style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
                     <button id="cancel-device-modal" class="btn btn-secondary glass-btn">Cancelar</button>
                     <button id="save-device-modal" class="btn btn-primary">Guardar Equipo</button>
                 </div>
             </div>
         </div>
 
+        <!-- MODAL: USER WRITER (CREATE / EDIT) -->
+        <div id="user-modal" class="modal hidden">
+            <div class="modal-content glass-panel"
+                style="max-width: 450px; background: rgba(18, 26, 48, 0.95); border: 1px solid rgba(255,255,255,0.12);">
+                <div class="modal-header"
+                    style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 id="user-modal-title" style="margin: 0; font-size: 1.25rem;">Añadir Nuevo Usuario</h3>
+                    <button class="close-btn" id="close-user-modal"
+                        style="background: none; border: none; font-size: 1.5rem; color: var(--text-dim); cursor: pointer;">&times;</button>
+                </div>
+                <div class="modal-body" style="padding-top: 20px;">
+                    <form id="user-modal-form" style="display: flex; flex-direction: column; gap: 16px;">
+                        <input type="hidden" id="user-action-mode" value="create"> <!-- "create" or "edit" -->
+                        <div class="form-group">
+                            <label
+                                style="display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-dim);">Nombre
+                                de Usuario (Login)</label>
+                            <input type="text" id="user-username-input" class="glass-input" required
+                                placeholder="Ej: mquino" style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label
+                                style="display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-dim);">Nombre
+                                Completo</label>
+                            <input type="text" id="user-fullname-input" class="glass-input" required
+                                placeholder="Ej: Ing. M. Quino" style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label
+                                style="display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-dim);">Contraseña</label>
+                            <input type="text" id="user-password-input" class="glass-input" required
+                                placeholder="••••••••" style="width: 100%;">
+                        </div>
+                        <div class="form-group">
+                            <label
+                                style="display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-dim);">Rol
+                                del Usuario</label>
+                            <select id="user-role-input" class="glass-input" style="width: 100%; cursor: pointer;">
+                                <option value="admin">Administrador (Acceso Total)</option>
+                                <option value="operator">Operador (Monitoreo & NOC)</option>
+                                <option value="engineer">Ingeniero de Campo (Mantenimiento)</option>
+                            </select>
+                        </div>
+                        <div id="user-error-msg"
+                            style="color: var(--critical); font-size: 0.82rem; display: none; text-align: center;">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer"
+                    style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
+                    <button id="cancel-user-modal" class="btn btn-secondary glass-btn">Cancelar</button>
+                    <button id="save-user-modal" class="btn btn-primary">Guardar Usuario</button>
+                </div>
+            </div>
+        </div>
+
         <!-- CONTEXT MENU FOR ALARMS (ATREC Integration) -->
-        <div id="alarm-context-menu" class="glass-panel" style="display: none; position: absolute; z-index: 10000; min-width: 220px; padding: 6px 0; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); border-radius: 8px; backdrop-filter: blur(12px); background: rgba(15, 23, 42, 0.95);">
-            <a href="#" class="context-menu-item" id="menu-ack-alarm" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
-                <i data-lucide="check-square" style="width: 14px; height: 14px; color: var(--success);"></i> Reconocer (Acknowledge)
+        <div id="alarm-context-menu" class="glass-panel"
+            style="display: none; position: absolute; z-index: 10000; min-width: 220px; padding: 6px 0; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); border-radius: 8px; backdrop-filter: blur(12px); background: rgba(15, 23, 42, 0.95);">
+            <a href="#" class="context-menu-item" id="menu-ack-alarm"
+                style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
+                <i data-lucide="check-square" style="width: 14px; height: 14px; color: var(--success);"></i> Reconocer
+                (Acknowledge)
             </a>
-            <a href="#" class="context-menu-item" id="menu-create-ticket" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
+            <a href="#" class="context-menu-item" id="menu-create-ticket"
+                style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
                 <i data-lucide="ticket" style="width: 14px; height: 14px; color: var(--accent);"></i> Crear Ticket ATREC
             </a>
-            <a href="#" class="context-menu-item" id="menu-assign-group" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
+            <a href="#" class="context-menu-item" id="menu-assign-group"
+                style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
                 <i data-lucide="users" style="width: 14px; height: 14px; color: #60a5fa;"></i> Asignar a Grupo
             </a>
-            <a href="#" class="context-menu-item" id="menu-view-detail" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
+            <a href="#" class="context-menu-item" id="menu-view-detail"
+                style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 0.82rem; color: var(--text-main); text-decoration: none; transition: background 0.2s;">
                 <i data-lucide="eye" style="width: 14px; height: 14px; color: #a78bfa;"></i> Ver Detalle / Ayuda
             </a>
         </div>
@@ -1880,29 +2235,39 @@
         </style>
 
         <!-- LOGIN OVERLAY -->
-        <div id="login-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at top right, rgba(16, 24, 48, 0.96), rgba(10, 15, 30, 0.99)); display: flex; align-items: center; justify-content: center; z-index: 99999; backdrop-filter: blur(12px);">
-            <div class="glass-panel" style="width: 420px; padding: 40px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; gap: 24px; text-align: center; background: rgba(18, 26, 48, 0.8);">
+        <div id="login-overlay"
+            style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at top right, rgba(16, 24, 48, 0.96), rgba(10, 15, 30, 0.99)); display: flex; align-items: center; justify-content: center; z-index: 99999; backdrop-filter: blur(12px);">
+            <div class="glass-panel"
+                style="width: 420px; padding: 40px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; gap: 24px; text-align: center; background: rgba(18, 26, 48, 0.8);">
                 <div>
-                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.3); margin-bottom: 16px; color: var(--primary);">
+                    <div
+                        style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.3); margin-bottom: 16px; color: var(--primary);">
                         <i data-lucide="shield-check" style="width: 32px; height: 32px;"></i>
                     </div>
-                    <h2 style="font-size: 1.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px; letter-spacing: 0.5px;">MITF-TOM</h2>
-                    <p class="subtitle" style="font-size: 0.85rem; color: var(--text-dim); margin: 0;">Portal de Telemetría e Ingeniería Médica</p>
+                    <h2
+                        style="font-size: 1.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px; letter-spacing: 0.5px;">
+                        MITF-TOM</h2>
+                    <p class="subtitle" style="font-size: 0.85rem; color: var(--text-dim); margin: 0;">Portal de
+                        Telemetría e Ingeniería Médica</p>
                 </div>
-                
+
                 <form id="login-form" style="display: flex; flex-direction: column; gap: 16px; text-align: left;">
                     <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Usuario</label>
-                        <input type="text" id="login-username" class="glass-input" placeholder="Nombre de usuario" style="width: 100%;" required>
+                        <input type="text" id="login-username" class="glass-input" placeholder="Nombre de usuario"
+                            style="width: 100%;" required>
                     </div>
                     <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500;">Contraseña</label>
-                        <input type="password" id="login-password" class="glass-input" placeholder="••••••••" style="width: 100%;" required>
+                        <input type="password" id="login-password" class="glass-input" placeholder="••••••••"
+                            style="width: 100%;" required>
                     </div>
-                    <div id="login-error-msg" style="color: var(--critical); font-size: 0.82rem; display: none; text-align: center; font-weight: 500;">
+                    <div id="login-error-msg"
+                        style="color: var(--critical); font-size: 0.82rem; display: none; text-align: center; font-weight: 500;">
                         Usuario o contraseña incorrectos.
                     </div>
-                    <button type="submit" class="btn btn-primary" style="margin-top: 10px; width: 100%; background: var(--primary); color: #000; border: none; font-weight: 700; padding: 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all var(--transition-speed);">
+                    <button type="submit" class="btn btn-primary"
+                        style="margin-top: 10px; width: 100%; background: var(--primary); color: #000; border: none; font-weight: 700; padding: 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all var(--transition-speed);">
                         <i data-lucide="log-in" style="width: 16px; height: 16px;"></i> Iniciar Sesión
                     </button>
                 </form>

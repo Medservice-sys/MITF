@@ -1,6 +1,25 @@
+version: '3.8'
+
 services:
   app:
     build: .
     network_mode: "host"
     volumes:
       - .:/app
+    env_file:
+      - .env
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-mitf_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mitf_password}
+      POSTGRES_DB: ${DB_NAME:-mitf_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

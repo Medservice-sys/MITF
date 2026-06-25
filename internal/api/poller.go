@@ -97,10 +97,14 @@ func StartPollingEngine() {
 			Store.Events = Store.Events[len(Store.Events)-500000:]
 		}
 
-		// Dynamically auto-detect device model / sw / serial from events
-		UpdateYANGTreeFromEvents(Store.Events)
+		// Copy events slice to pass safely to UpdateYANGTreeFromEvents without holding the lock
+		eventsCopy := make([]models.UnifiedLogEvent, len(Store.Events))
+		copy(eventsCopy, Store.Events)
 
 		Store.mu.Unlock()
+
+		// Dynamically auto-detect device model / sw / serial from events
+		UpdateYANGTreeFromEvents(eventsCopy)
 	}
 
 	go func() {

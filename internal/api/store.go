@@ -350,9 +350,55 @@ func UpdateYANGTreeFromEvents(events []models.UnifiedLogEvent) {
 		regexp.MustCompile(`(?i)(?:serial\s*number|system\s*serial|serial\s*no|s/n|sn)\s*[:=]\s*([a-zA-Z0-9\-_]+)`),
 	}
 
+	isBlacklisted := func(val string) bool {
+		v := strings.ToLower(strings.TrimSpace(val))
+		return v == "ios" || v == "unix" || v == "linux" || v == "none" || v == "unknown" || v == "null" || v == "false" || v == "true" || v == "test" || v == "testing"
+	}
+
 	var detectedModel, detectedSW, detectedSN string
 
-	for _, ev := range events {
+	// Iterate in reverse chronological order (newest first) to prioritize the latest valid scanner configuration
+	for i := len(events) - 1; i >= 0; i-- {
+		ev := events[i]
+
+		// Skip display manager log events for hardware identification (generic Java UI properties)
+		// and mock injected events (Siemens-MRI-Serv, Philips-Achieva)
+		if ev.Process == "DISP_MGR" || 
+			strings.Contains(strings.ToLower(ev.Source), "displaymanager") ||
+			ev.Host == "Siemens-MRI-Serv" || 
+			ev.Host == "Philips-Achieva" {
+			continue
+		}
+
+		// Search event message
+		msg := ev.Message
+		if msg == "" {
+			continue
+		}
+
+		// 1. Check for specific PRODUCT CONFIGURATION line format in GE logs
+		if strings.Contains(msg, "PRODUCT CONFIGURATION|") {
+			parts := strings.Split(msg, "|")
+			for _, part := range parts {
+				kv := strings.SplitN(part, ":", 2)
+				if len(kv) == 2 {
+					key := strings.TrimSpace(kv[0])
+					val := strings.TrimSpace(kv[1])
+					if key == "Product" && detectedModel == "" && !isBlacklisted(val) {
+						if !strings.HasPrefix(strings.ToUpper(val), "GE") {
+							detectedModel = "GE " + val
+						} else {
+							detectedModel = val
+						}
+					} else if key == "sw_version" && detectedSW == "" && !isBlacklisted(val) {
+						detectedSW = val
+					} else if key == "host_id" && detectedSN == "" && !isBlacklisted(val) {
+						detectedSN = val
+					}
+				}
+			}
+		}
+
 		// Also look at hostname for hints
 		if ev.Host != "" && ev.Host != "host_test" && ev.Host != "localhost" && ev.Host != "127.0.0.1" {
 			// If hostname matches a model keyword, use it as fallback
@@ -370,18 +416,13 @@ func UpdateYANGTreeFromEvents(events []models.UnifiedLogEvent) {
 			}
 		}
 
-		// Search event message
-		msg := ev.Message
-		if msg == "" {
-			continue
-		}
-
+		// 2. Fallback to regex searches
 		// Try to find model
 		if detectedModel == "" {
 			for _, r := range modelRegexes {
 				if matches := r.FindStringSubmatch(msg); len(matches) > 1 {
 					val := strings.TrimSpace(matches[1])
-					if val != "" && !strings.Contains(strings.ToLower(val), "error") {
+					if val != "" && !strings.Contains(strings.ToLower(val), "error") && !isBlacklisted(val) {
 						lowerVal := strings.ToLower(val)
 						if strings.Contains(lowerVal, "somatom") || strings.Contains(lowerVal, "brilliance") || strings.Contains(lowerVal, "aquilion") {
 							detectedModel = val
@@ -401,7 +442,7 @@ func UpdateYANGTreeFromEvents(events []models.UnifiedLogEvent) {
 			for _, r := range swRegexes {
 				if matches := r.FindStringSubmatch(msg); len(matches) > 1 {
 					val := strings.TrimSpace(matches[1])
-					if val != "" {
+					if val != "" && !isBlacklisted(val) {
 						detectedSW = val
 						break
 					}
@@ -414,7 +455,7 @@ func UpdateYANGTreeFromEvents(events []models.UnifiedLogEvent) {
 			for _, r := range snRegexes {
 				if matches := r.FindStringSubmatch(msg); len(matches) > 1 {
 					val := strings.TrimSpace(matches[1])
-					if val != "" {
+					if val != "" && !isBlacklisted(val) {
 						detectedSN = val
 						break
 					}

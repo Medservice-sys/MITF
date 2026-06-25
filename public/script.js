@@ -150,6 +150,8 @@ document.querySelectorAll('.nav-item').forEach(item => {
         } else if (targetView === 'admin-classifications') {
             loadAdminClassifications();
             loadHealthConfig();
+        } else if (targetView === 'users') {
+            loadUsersData();
         } else if (targetView === 'hardware') {
             loadHardwareAdminParams();
             loadClassificationData(targetView, queryParams);
@@ -1510,6 +1512,7 @@ window.addEventListener('DOMContentLoaded', () => {
     startCountdown();
     loadConfigMode();
     initUserRole();
+    initUserCrudEvents();
 
     // Bind toggle button from dashboard mode banner
     const toggleBtn = document.getElementById('btn-toggle-mode-dash');
@@ -2980,14 +2983,6 @@ if (settingsForm) {
 }
 
 // 7. Role Access Control, Authentication, and Health Modeling parameters
-const CREDENTIALS = {
-    'mquino': { password: 'mquino', role: 'engineer', fullName: 'Ing. M. Quino (IC 1)' },
-    'jquispe': { password: 'jquispe', role: 'engineer', fullName: 'Ing. J. Quispe (IC 2)' },
-    'jcontreras': { password: 'jcontreras', role: 'engineer', fullName: 'Ing. J. Contreras (IC 3)' },
-    'operator': { password: 'operator', role: 'operator', fullName: 'Operador de Turno NOC' },
-    'admin': { password: 'admin', role: 'admin', fullName: 'Administrador NOC' }
-};
-
 function initUserRole() {
     const currentUser = sessionStorage.getItem('currentUser');
     const loginOverlay = document.getElementById('login-overlay');
@@ -3003,7 +2998,7 @@ function initUserRole() {
 
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const usernameInput = document.getElementById('login-username');
             const passwordInput = document.getElementById('login-password');
@@ -3011,29 +3006,51 @@ function initUserRole() {
             
             if (!usernameInput || !passwordInput) return;
             
-            const username = usernameInput.value.trim().toLowerCase();
+            const username = usernameInput.value.trim();
             const password = passwordInput.value;
             
-            const creds = CREDENTIALS[username];
-            if (creds && creds.password === password) {
-                sessionStorage.setItem('currentUser', username);
-                sessionStorage.setItem('user-role', creds.role);
-                sessionStorage.setItem('user-fullname', creds.fullName);
+            try {
+                const res = await fetch('/api/users/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
                 
-                if (errorMsg) errorMsg.style.display = 'none';
-                if (loginOverlay) loginOverlay.style.display = 'none';
+                if (!res.ok) {
+                    if (errorMsg) errorMsg.style.display = 'block';
+                    return;
+                }
                 
-                updateSidebarUserDisplay();
-                applyRoleAccessControl(creds.role);
-                
-                usernameInput.value = '';
-                passwordInput.value = '';
-                
-                // Reload content to fit role
-                refreshDashboard();
-                loadMaintenanceRecords();
-            } else {
-                if (errorMsg) errorMsg.style.display = 'block';
+                const data = await res.json();
+                if (data.success && data.user) {
+                    sessionStorage.setItem('currentUser', data.user.username);
+                    sessionStorage.setItem('user-role', data.user.role);
+                    sessionStorage.setItem('user-fullname', data.user.fullName);
+                    
+                    if (errorMsg) errorMsg.style.display = 'none';
+                    if (loginOverlay) loginOverlay.style.display = 'none';
+                    
+                    updateSidebarUserDisplay();
+                    applyRoleAccessControl(data.user.role);
+                    
+                    usernameInput.value = '';
+                    passwordInput.value = '';
+                    
+                    // Reload content to fit role
+                    refreshDashboard();
+                    loadMaintenanceRecords();
+                } else {
+                    if (errorMsg) {
+                        errorMsg.textContent = data.error || "Usuario o contraseña incorrectos";
+                        errorMsg.style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                console.error("Login request failed:", err);
+                if (errorMsg) {
+                    errorMsg.textContent = "Error al conectar con el servidor";
+                    errorMsg.style.display = 'block';
+                }
             }
         });
     }
@@ -3071,6 +3088,7 @@ function applyRoleAccessControl(role) {
 
     const adminNav = document.querySelector('.nav-item[data-view="admin-classifications"]');
     const settingsNav = document.querySelector('.nav-item[data-view="settings"]');
+    const usersNav = document.querySelector('.nav-item[data-view="users"]');
     const adminHwPanel = document.getElementById('admin-tube-settings-panel');
     
     const maintFormBox = document.querySelector('.maint-form-box');
@@ -3079,6 +3097,7 @@ function applyRoleAccessControl(role) {
     if (role === 'operator') {
         if (adminNav) adminNav.style.display = 'none';
         if (settingsNav) settingsNav.style.display = 'none';
+        if (usersNav) usersNav.style.display = 'none';
         if (adminHwPanel) adminHwPanel.style.display = 'none';
         if (maintFormBox) maintFormBox.style.display = 'block';
         if (ticketsContainerParent) ticketsContainerParent.style.gridColumn = 'auto';
@@ -3086,7 +3105,7 @@ function applyRoleAccessControl(role) {
         const activeNav = document.querySelector('.nav-item.active');
         if (activeNav) {
             const currentView = activeNav.getAttribute('data-view');
-            if (currentView === 'admin-classifications' || currentView === 'settings') {
+            if (currentView === 'admin-classifications' || currentView === 'settings' || currentView === 'users') {
                 const dashNav = document.querySelector('.nav-item[data-view="dashboard"]');
                 if (dashNav) dashNav.click();
             }
@@ -3094,6 +3113,7 @@ function applyRoleAccessControl(role) {
     } else if (role === 'admin') {
         if (adminNav) adminNav.style.display = 'flex';
         if (settingsNav) settingsNav.style.display = 'flex';
+        if (usersNav) usersNav.style.display = 'flex';
         if (adminHwPanel) adminHwPanel.style.display = 'block';
         if (maintFormBox) maintFormBox.style.display = 'block';
         if (ticketsContainerParent) ticketsContainerParent.style.gridColumn = 'auto';
@@ -3110,6 +3130,7 @@ function applyRoleAccessControl(role) {
     } else if (role === 'engineer') {
         if (adminNav) adminNav.style.display = 'none';
         if (settingsNav) settingsNav.style.display = 'none';
+        if (usersNav) usersNav.style.display = 'none';
         if (adminHwPanel) adminHwPanel.style.display = 'none';
         if (maintFormBox) maintFormBox.style.display = 'none';
         if (ticketsContainerParent) ticketsContainerParent.style.gridColumn = '1 / -1';
@@ -3117,7 +3138,7 @@ function applyRoleAccessControl(role) {
         const activeNav = document.querySelector('.nav-item.active');
         if (activeNav) {
             const currentView = activeNav.getAttribute('data-view');
-            if (currentView === 'admin-classifications' || currentView === 'settings') {
+            if (currentView === 'admin-classifications' || currentView === 'settings' || currentView === 'users') {
                 const dashNav = document.querySelector('.nav-item[data-view="dashboard"]');
                 if (dashNav) dashNav.click();
             }
@@ -3816,4 +3837,231 @@ if (originalTicketFormListener) {
             alert("Error de conexión al guardar el ticket ATREC.");
         }
     });
+}
+
+// ----------------------------------------------------
+// 8. DYNAMIC USER MANAGEMENT (CRUD) MODULE
+// ----------------------------------------------------
+let loadedUsers = [];
+
+async function loadUsersData() {
+    const tbody = document.getElementById('users-table-body');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch('/api/users');
+        if (!res.ok) return;
+        loadedUsers = await res.json();
+        renderUsersTable();
+    } catch (err) {
+        console.error("Error loading users data:", err);
+    }
+}
+
+function renderUsersTable() {
+    const tbody = document.getElementById('users-table-body');
+    if (!tbody) return;
+
+    const query = (document.getElementById('users-search')?.value || "").toLowerCase().trim();
+    tbody.innerHTML = "";
+
+    const filtered = loadedUsers.filter(u => {
+        return (u.username || "").toLowerCase().includes(query) ||
+               (u.fullName || "").toLowerCase().includes(query) ||
+               (u.role || "").toLowerCase().includes(query);
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="padding: 20px; color: var(--text-dim);">No se encontraron usuarios.</td></tr>`;
+        return;
+    }
+
+    // Role display mappings
+    const roleLabels = {
+        'admin': '<span class="pill pill-critical">Administrador</span>',
+        'operator': '<span class="pill pill-info">Operador NOC</span>',
+        'engineer': '<span class="pill pill-warning">Ingeniero de Campo</span>'
+    };
+
+    filtered.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+        
+        const roleLabel = roleLabels[u.role] || `<span class="pill">${u.role}</span>`;
+
+        tr.innerHTML = `
+            <td style="padding: 12px; font-weight: 600; color: var(--text-main); font-family: monospace;">${escapeHtml(u.username)}</td>
+            <td style="padding: 12px; color: var(--text);">${escapeHtml(u.fullName)}</td>
+            <td style="padding: 12px;">${roleLabel}</td>
+            <td style="padding: 12px; color: var(--text-dim); font-family: monospace;">••••••••</td>
+            <td style="padding: 12px; text-align: right;">
+                <div style="display: inline-flex; gap: 8px;">
+                    <button class="btn btn-secondary glass-btn btn-sm edit-user-btn" data-username="${u.username}" style="padding: 4px 8px; font-size: 0.75rem; display: flex; align-items: center; gap: 4px;">
+                        <i data-lucide="edit" style="width: 12px; height: 12px;"></i> Editar
+                    </button>
+                    <button class="btn btn-danger btn-sm delete-user-btn" data-username="${u.username}" style="padding: 4px 8px; font-size: 0.75rem; background: var(--critical); color: white; border: none; border-radius: 4px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i> Eliminar
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
+    });
+
+    // Reinitialize icons in table rows
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+    }
+
+    // Attach button events
+    tbody.querySelectorAll('.edit-user-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const username = btn.getAttribute('data-username');
+            const userObj = loadedUsers.find(u => u.username === username);
+            if (userObj) {
+                openUserModal('edit', userObj);
+            }
+        });
+    });
+
+    tbody.querySelectorAll('.delete-user-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const username = btn.getAttribute('data-username');
+            if (confirm(`¿Está seguro de que desea eliminar al usuario "${username}"?`)) {
+                try {
+                    const res = await fetch(`/api/users?username=${encodeURIComponent(username)}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (res.ok) {
+                        loadUsersData();
+                    } else {
+                        const errData = await res.json();
+                        alert(errData.error || "No se pudo eliminar el usuario.");
+                    }
+                } catch (err) {
+                    console.error("Error deleting user:", err);
+                    alert("Error de conexión al eliminar el usuario.");
+                }
+            }
+        });
+    });
+}
+
+function openUserModal(mode, user = null) {
+    const modal = document.getElementById('user-modal');
+    const form = document.getElementById('user-modal-form');
+    const title = document.getElementById('user-modal-title');
+    const modeInput = document.getElementById('user-action-mode');
+    const usernameInput = document.getElementById('user-username-input');
+    const fullNameInput = document.getElementById('user-fullname-input');
+    const passwordInput = document.getElementById('user-password-input');
+    const roleInput = document.getElementById('user-role-input');
+    const errMsg = document.getElementById('user-error-msg');
+
+    if (!modal || !form) return;
+
+    // Reset error message
+    if (errMsg) {
+        errMsg.style.display = 'none';
+        errMsg.textContent = '';
+    }
+
+    modeInput.value = mode;
+
+    if (mode === 'create') {
+        title.textContent = 'Añadir Nuevo Usuario';
+        form.reset();
+        usernameInput.disabled = false;
+        usernameInput.style.opacity = 1;
+        passwordInput.placeholder = 'Contraseña inicial';
+        passwordInput.required = true;
+    } else {
+        title.textContent = 'Editar Usuario';
+        usernameInput.value = user.username;
+        usernameInput.disabled = true; // Username is key and immutable
+        usernameInput.style.opacity = 0.6;
+        fullNameInput.value = user.fullName;
+        passwordInput.value = user.password;
+        passwordInput.placeholder = 'Nueva contraseña';
+        passwordInput.required = true;
+        roleInput.value = user.role;
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeUserModal() {
+    const modal = document.getElementById('user-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function initUserCrudEvents() {
+    // Search input listener
+    document.getElementById('users-search')?.addEventListener('input', renderUsersTable);
+
+    // Create User Button
+    document.getElementById('btn-create-user')?.addEventListener('click', () => {
+        openUserModal('create');
+    });
+
+    // Close Modal triggers
+    document.getElementById('close-user-modal')?.addEventListener('click', closeUserModal);
+    document.getElementById('cancel-user-modal')?.addEventListener('click', closeUserModal);
+
+    // Save Modal trigger
+    document.getElementById('save-user-modal')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        const form = document.getElementById('user-modal-form');
+        if (!form || !form.reportValidity()) return;
+
+        const mode = document.getElementById('user-action-mode').value;
+        const username = document.getElementById('user-username-input').value.trim();
+        const fullName = document.getElementById('user-fullname-input').value.trim();
+        const password = document.getElementById('user-password-input').value;
+        const role = document.getElementById('user-role-input').value;
+        const errMsg = document.getElementById('user-error-msg');
+
+        const payload = { username, fullName, password, role };
+
+        try {
+            const res = await fetch('/api/users', {
+                method: mode === 'create' ? 'POST' : 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                closeUserModal();
+                loadUsersData();
+            } else {
+                const errData = await res.json();
+                if (errMsg) {
+                    errMsg.textContent = errData.error || "Ocurrió un error al guardar.";
+                    errMsg.style.display = 'block';
+                }
+            }
+        } catch (err) {
+            console.error("Error saving user:", err);
+            if (errMsg) {
+                errMsg.textContent = "Error de conexión con el servidor.";
+                errMsg.style.display = 'block';
+            }
+        }
+    });
+}
+
+// Helper to escape HTML and prevent XSS
+function escapeHtml(text) {
+    if (!text) return "";
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
 }

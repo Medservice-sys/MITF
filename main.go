@@ -7,6 +7,7 @@ import (
 
 	"mitf/internal/api"
 	"mitf/internal/config"
+	"mitf/internal/db"
 )
 
 func main() {
@@ -15,8 +16,12 @@ func main() {
 		log.Fatalf("CRITICAL STARTUP ERROR: %v", err)
 	}
 
+	// Initialize database connection
+	db.InitDB()
+
 	// Load or migrate device profiles after env is loaded
 	api.LoadDevicesOnStartup()
+	api.LoadUsersOnStartup()
 
 	// 1. Start background SSH poller engine
 	api.StartPollingEngine()
@@ -28,6 +33,8 @@ func main() {
 	http.HandleFunc("/api/yang", api.HandleYang)
 	http.HandleFunc("/api/history", api.HandleHistory)
 	http.HandleFunc("/api/classification", api.HandleClassification)
+	http.HandleFunc("/api/users", api.HandleUsers)
+	http.HandleFunc("/api/users/login", api.HandleUsersLogin)
 
 	// Canonical MITF endpoints
 	http.HandleFunc("/api/devices", api.HandleDevices)
