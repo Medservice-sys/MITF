@@ -13,7 +13,7 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: ${DB_USER:-mitf_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-mitf_password}
