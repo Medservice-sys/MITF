@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"mitf/internal/db"
@@ -39,22 +40,36 @@ func LoadUsersOnStartup() {
 	}
 
 	if count == 0 {
-		log.Println("[USERS] Users table is empty, initializing with default credentials...")
-		defaultUsers := []models.User{
-			{Username: "admin", Password: "admin", Role: "admin", FullName: "Administrador NOC"},
-			{Username: "operator", Password: "operator", Role: "operator", FullName: "Operador de Turno NOC"},
-			{Username: "mquino", Password: "mquino", Role: "engineer", FullName: "Ing. M. Quino (IC 1)"},
-			{Username: "jquispe", Password: "jquispe", Role: "engineer", FullName: "Ing. J. Quispe (IC 2)"},
-			{Username: "jcontreras", Password: "jcontreras", Role: "engineer", FullName: "Ing. J. Contreras (IC 3)"},
+		var defaultUsers []models.User
+
+		// Try to read existing users from users.json to migrate them
+		file, err := os.ReadFile("data/users.json")
+		if err == nil {
+			log.Println("[USERS] Users table is empty. Migrating existing users from data/users.json...")
+			if unmarshalErr := json.Unmarshal(file, &defaultUsers); unmarshalErr != nil {
+				log.Printf("[USERS] Error parsing users.json: %v. Will fallback to default hardcoded users.", unmarshalErr)
+			}
+		}
+
+		if len(defaultUsers) == 0 {
+			log.Println("[USERS] Users table is empty and no valid json found, initializing with default credentials...")
+			defaultUsers = []models.User{
+				{Username: "admin", Password: "admin", Role: "admin", FullName: "Administrador NOC"},
+				{Username: "operator", Password: "operator", Role: "operator", FullName: "Operador de Turno NOC"},
+				{Username: "mquino", Password: "mquino", Role: "engineer", FullName: "Ing. M. Quino (IC 1)"},
+				{Username: "jquispe", Password: "jquispe", Role: "engineer", FullName: "Ing. J. Quispe (IC 2)"},
+				{Username: "jcontreras", Password: "jcontreras", Role: "engineer", FullName: "Ing. J. Contreras (IC 3)"},
+			}
 		}
 
 		for _, u := range defaultUsers {
 			_, err := db.GetDB().Exec("INSERT INTO users (username, password, role, full_name) VALUES ($1, $2, $3, $4)",
 				u.Username, u.Password, u.Role, u.FullName)
 			if err != nil {
-				log.Printf("[USERS] Error inserting default user %s: %v", u.Username, err)
+				log.Printf("[USERS] Error inserting user %s: %v", u.Username, err)
 			}
 		}
+		log.Printf("[USERS] Inserted %d users into the database.", len(defaultUsers))
 	} else {
 		log.Printf("[USERS] Users database ready, found %d users.", count)
 	}
