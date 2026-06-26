@@ -22,9 +22,10 @@ import (
 
 // LogFileContent represents raw lines extracted from a file source.
 type LogFileContent struct {
-	Name   string
-	Lines  []string
-	Source string
+	Name     string
+	Lines    []string
+	Source   string
+	DeviceID string
 }
 
 // isAllowedLogFileForBrand checks if a file is allowed based on the device brand and query mode.
@@ -137,8 +138,9 @@ type Collector interface {
 // FileCollector implements local file ingestion using os.Open and Seek.
 type FileCollector struct {
 	dirPath string
-	brand   string
-	tracker *OffsetTracker
+	brand    string
+	deviceID string
+	tracker  *OffsetTracker
 }
 
 // NewFileCollector initializes a FileCollector with backup_offsets.json (or offsets.json).
@@ -148,9 +150,10 @@ func NewFileCollector(dirPath string, brand string) (*FileCollector, error) {
 		return nil, err
 	}
 	return &FileCollector{
-		dirPath: dirPath,
-		brand:   brand,
-		tracker: tracker,
+		dirPath:  dirPath,
+		brand:    brand,
+		deviceID: "default-ne-1",
+		tracker:  tracker,
 	}, nil
 }
 
@@ -232,9 +235,10 @@ func (c *FileCollector) Collect(mode string) ([]LogFileContent, error) {
 
 			if len(cleanLines) > 0 {
 				results = append(results, LogFileContent{
-					Name:   fileName,
-					Lines:  cleanLines,
-					Source: fullPath,
+					Name:     fileName,
+					Lines:    cleanLines,
+					Source:   fullPath,
+					DeviceID: c.deviceID,
 				})
 			}
 		} else if stat.Size() < offset {
@@ -257,6 +261,7 @@ type SSHCollector struct {
 	mode      string
 	remoteDir string
 	brand     string
+	deviceID  string
 	tracker   *OffsetTracker
 }
 
@@ -273,6 +278,7 @@ func NewSSHCollector() (*SSHCollector, error) {
 		mode:      config.AppConfig.SSHMode,
 		remoteDir: config.AppConfig.RemoteLogDir,
 		brand:     "GE", // Default brand for backward compatibility
+		deviceID:  "default-ne-1",
 		tracker:   tracker,
 	}, nil
 }
@@ -290,6 +296,7 @@ func NewSSHCollectorForDevice(dev models.DeviceProfile) (*SSHCollector, error) {
 		mode:      dev.SSHMode,
 		remoteDir: dev.RemoteLogDir,
 		brand:     dev.Brand,
+		deviceID:  dev.ID,
 		tracker:   tracker,
 	}, nil
 }
@@ -446,9 +453,10 @@ func (c *SSHCollector) Collect(mode string) ([]LogFileContent, error) {
 
 			if len(cleanLines) > 0 {
 				results = append(results, LogFileContent{
-					Name:   fileName,
-					Lines:  cleanLines,
-					Source: fullPath,
+					Name:     fileName,
+					Lines:    cleanLines,
+					Source:   fullPath,
+					DeviceID: c.deviceID,
 				})
 			}
 		} else if remoteSize < offset {
@@ -464,7 +472,11 @@ func (c *SSHCollector) Collect(mode string) ([]LogFileContent, error) {
 func CollectTomographLogs(mode string, profiles []models.DeviceProfile) ([]LogFileContent, error) {
 	collectorType := os.Getenv("CT_COLLECTOR_TYPE")
 	if collectorType == "local" || config.AppConfig.SSHHost == "local" {
-		col, err := NewFileCollector(config.AppConfig.RemoteLogDir, "GE")
+		localDir := config.AppConfig.RemoteLogDir
+		if localDir == "" {
+			localDir = "data/local_logs"
+		}
+		col, err := NewFileCollector(localDir, "GE")
 		if err != nil {
 			return nil, err
 		}
@@ -473,8 +485,12 @@ func CollectTomographLogs(mode string, profiles []models.DeviceProfile) ([]LogFi
 
 	var allResults []LogFileContent
 
-	// If no profiles provided, fallback to the legacy single CT config
+	// If no profiles provided, fallback to the legacy single CT config only if SSHHost is set
 	if len(profiles) == 0 {
+		if config.AppConfig.SSHHost == "" {
+			log.Println("[POLLER] No active device profiles to monitor. Please add devices in the Settings panel.")
+			return nil, nil
+		}
 		col, err := NewSSHCollector()
 		if err != nil {
 			return nil, err

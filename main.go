@@ -8,6 +8,7 @@ import (
 	"mitf/internal/api"
 	"mitf/internal/config"
 	"mitf/internal/db"
+	"mitf/internal/ftp"
 )
 
 func main() {
@@ -19,9 +20,16 @@ func main() {
 	// Initialize database connection
 	db.InitDB()
 
-	// Load or migrate device profiles after env is loaded
+	// Load or migrate general configuration and device profiles from PostgreSQL
+	api.LoadConfigOnStartup()
 	api.LoadDevicesOnStartup()
 	api.LoadUsersOnStartup()
+
+	// Start embedded FTP server for CT Logs (Fallback when SSH is off)
+	ftp.StartFTPServer(api.FTPPort, api.FTPUser, api.FTPPass)
+
+	// Start FTP watcher to auto-process uploaded logs
+	api.StartFTPWatcher()
 
 	// 1. Start background SSH poller engine
 	api.StartPollingEngine()
@@ -56,6 +64,12 @@ func main() {
 	http.HandleFunc("/api/knowledge", api.HandleKnowledge)
 	http.HandleFunc("/api/dicom/stations", api.HandleDicomStations)
 	http.HandleFunc("/api/dicom/ping", api.HandleDicomPing)
+
+	// FTP Ingestion Endpoints
+	http.HandleFunc("/api/ftp/status", api.HandleFTPStatus)
+	http.HandleFunc("/api/ftp/files", api.HandleFTPFiles)
+	http.HandleFunc("/api/ftp/process", api.HandleFTPProcess)
+	http.HandleFunc("/api/ftp/config", api.HandleFTPConfig)
 
 	// 3. Serve frontend static assets from public folder
 	fs := http.FileServer(http.Dir("./public"))

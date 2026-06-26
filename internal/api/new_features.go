@@ -857,18 +857,11 @@ func HandleConfig(w http.ResponseWriter, r *http.Request) {
 		}
 		DeviceProfilesMu.Unlock()
 
-		// Save general config
-		cfgData, _ := json.MarshalIndent(map[string]interface{}{
-			"operationMode":   req.OperationMode,
-			"refreshInterval": req.RefreshInterval,
-		}, "", "  ")
-		_ = os.WriteFile("data/config.json", cfgData, 0644)
-
-		// Save devices
-		DeviceProfilesMu.RLock()
-		devData, _ := json.MarshalIndent(DeviceProfiles, "", "  ")
-		_ = os.WriteFile("data/devices.json", devData, 0644)
-		DeviceProfilesMu.RUnlock()
+		// Save configuration and devices to PostgreSQL
+		if err := SaveConfigToDB(req.OperationMode, req.RefreshInterval, DeviceProfiles); err != nil {
+			http.Error(w, "Failed to save configuration to database: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{

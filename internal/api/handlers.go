@@ -20,12 +20,16 @@ func HandleData(w http.ResponseWriter, r *http.Request) {
 
 	severity := r.URL.Query().Get("severity")
 	process := r.URL.Query().Get("process")
+	deviceID := r.URL.Query().Get("deviceId")
 
 	events := getProcessedEvents()
 	fromTime, toTime, hasRange := parseDateRange(r, events)
 
 	var filtered []models.UnifiedLogEvent
 	for _, ev := range events {
+		if deviceID != "" && ev.DeviceID != deviceID {
+			continue
+		}
 		if hasRange && !fromTime.IsZero() && ev.Timestamp.Before(fromTime) {
 			continue
 		}
@@ -63,11 +67,15 @@ func HandleMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	deviceID := r.URL.Query().Get("deviceId")
 	events := getProcessedEvents()
 	fromTime, toTime, hasRange := parseDateRange(r, events)
 
 	var filtered []models.UnifiedLogEvent
 	for _, ev := range events {
+		if deviceID != "" && ev.DeviceID != deviceID {
+			continue
+		}
 		if hasRange && !fromTime.IsZero() && ev.Timestamp.Before(fromTime) {
 			continue
 		}
@@ -160,38 +168,32 @@ func HandleHistory(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	deviceID := r.URL.Query().Get("deviceId")
 	events := getProcessedEvents()
 
 	fromStr := r.URL.Query().Get("from")
 	toStr := r.URL.Query().Get("to")
 
 	var filteredEvents []models.UnifiedLogEvent
-	if fromStr != "" || toStr != "" {
-		var fromTime, toTime time.Time
+	for _, ev := range events {
+		if deviceID != "" && ev.DeviceID != deviceID {
+			continue
+		}
 		if fromStr != "" {
 			if t, err := time.Parse(time.RFC3339, fromStr); err == nil {
-				fromTime = t
+				if ev.Timestamp.Before(t) {
+					continue
+				}
 			}
 		}
 		if toStr != "" {
 			if t, err := time.Parse(time.RFC3339, toStr); err == nil {
-				toTime = t
+				if ev.Timestamp.After(t) {
+					continue
+				}
 			}
 		}
-
-		for _, ev := range events {
-			if !fromTime.IsZero() && ev.Timestamp.Before(fromTime) {
-				continue
-			}
-			if !toTime.IsZero() && ev.Timestamp.After(toTime) {
-				continue
-			}
-			filteredEvents = append(filteredEvents, ev)
-		}
-	} else {
-		// Copy slice to avoid mutating global store order if sorted in-place
-		filteredEvents = make([]models.UnifiedLogEvent, len(events))
-		copy(filteredEvents, events)
+		filteredEvents = append(filteredEvents, ev)
 	}
 
 	// Sort events descending (newest first)
@@ -250,6 +252,7 @@ func HandleSubsystems(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	deviceID := r.URL.Query().Get("deviceId")
 	events := getProcessedEvents()
 
 	subsystems := []string{
@@ -259,6 +262,9 @@ func HandleSubsystems(w http.ResponseWriter, r *http.Request) {
 
 	shiDegradation := make(map[string]float64)
 	for _, ev := range events {
+		if deviceID != "" && ev.DeviceID != deviceID {
+			continue
+		}
 		sub := strings.ToLower(ev.Subsystem)
 		if sub == "" {
 			sub = "console"
@@ -310,9 +316,18 @@ func HandleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	deviceID := r.URL.Query().Get("deviceId")
 	events := getProcessedEvents()
 
-	dhi, thi, fhi, roi, _, _, _ := metrics.CalculateHealthIndices(events)
+	var filtered []models.UnifiedLogEvent
+	for _, ev := range events {
+		if deviceID != "" && ev.DeviceID != deviceID {
+			continue
+		}
+		filtered = append(filtered, ev)
+	}
+
+	dhi, thi, fhi, roi, _, _, _ := metrics.CalculateHealthIndices(filtered)
 
 	type HealthResponse struct {
 		DHI float64 `json:"dhi"`
@@ -364,22 +379,32 @@ func HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	deviceID := r.URL.Query().Get("deviceId")
 	events := getProcessedEvents()
+
+	var filtered []models.UnifiedLogEvent
+	for _, ev := range events {
+		if deviceID != "" && ev.DeviceID != deviceID {
+			continue
+		}
+		filtered = append(filtered, ev)
+	}
+
 	Store.mu.RLock()
 	status := Store.Status
 	Store.mu.RUnlock()
 
-	dhi, thi, fhi, roi, crit, warn, processMap := metrics.CalculateHealthIndices(events)
+	dhi, thi, fhi, roi, crit, warn, processMap := metrics.CalculateHealthIndices(filtered)
 
 	validCount := 0
-	for _, ev := range events {
+	for _, ev := range filtered {
 		if ev.TCECode != "" && !strings.Contains(ev.TCECode, "GENERIC") {
 			validCount++
 		}
 	}
 	dqs := 100.0
-	if len(events) > 0 {
-		dqs = (float64(validCount) / float64(len(events))) * 100.0
+	if len(filtered) > 0 {
+		dqs = (float64(validCount) / float64(len(filtered))) * 100.0
 	}
 
 	type DashboardResponse struct {
@@ -396,7 +421,7 @@ func HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		RecentEvents  []models.UnifiedLogEvent `json:"recentEvents"`
 	}
 
-	recent := events
+	recent := filtered
 	if len(recent) > 10 {
 		recent = recent[len(recent)-10:]
 	}
@@ -407,7 +432,7 @@ func HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		THI:           thi,
 		ROI:           roi,
 		DQS:           dqs,
-		TotalEvents:   len(events),
+		TotalEvents:   len(filtered),
 		CriticalCount: crit,
 		WarningCount:  warn,
 		Collector:     status.Status,
@@ -421,22 +446,22 @@ func HandleClassification(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	deviceID := r.URL.Query().Get("deviceId")
 	events := getProcessedEvents()
 
 	fromTime, toTime, hasRange := parseDateRange(r, events)
 	var filteredEvents []models.UnifiedLogEvent
-	if hasRange {
-		for _, ev := range events {
-			if !fromTime.IsZero() && ev.Timestamp.Before(fromTime) {
-				continue
-			}
-			if !toTime.IsZero() && ev.Timestamp.After(toTime) {
-				continue
-			}
-			filteredEvents = append(filteredEvents, ev)
+	for _, ev := range events {
+		if deviceID != "" && ev.DeviceID != deviceID {
+			continue
 		}
-	} else {
-		filteredEvents = events
+		if hasRange && !fromTime.IsZero() && ev.Timestamp.Before(fromTime) {
+			continue
+		}
+		if hasRange && !toTime.IsZero() && ev.Timestamp.After(toTime) {
+			continue
+		}
+		filteredEvents = append(filteredEvents, ev)
 	}
 
 	// 1. Alertas Tempranas (Severity is SEVERE_ERROR or WARNING within last 24 hours of latest log)

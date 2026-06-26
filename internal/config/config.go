@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -42,25 +41,6 @@ func LoadConfig() error {
 		SSHPassword:  os.Getenv("CT_SSH_PASSWORD"),
 		SSHMode:      mode,
 		RemoteLogDir: os.Getenv("CT_REMOTE_LOG_DIR"),
-	}
-
-	// Validate required variables
-	missingVars := []string{}
-	if appConfig.SSHHost == "" {
-		missingVars = append(missingVars, "CT_SSH_HOST")
-	}
-	if appConfig.SSHUser == "" {
-		missingVars = append(missingVars, "CT_SSH_USER")
-	}
-	if appConfig.SSHPassword == "" {
-		missingVars = append(missingVars, "CT_SSH_PASSWORD")
-	}
-	if appConfig.RemoteLogDir == "" {
-		missingVars = append(missingVars, "CT_REMOTE_LOG_DIR")
-	}
-
-	if len(missingVars) > 0 {
-		return fmt.Errorf("missing required environment variables: %v", missingVars)
 	}
 
 	AppConfig = appConfig

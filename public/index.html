@@ -103,6 +103,9 @@
                 <a href="#" class="nav-item" data-view="users">
                     <i data-lucide="users"></i> Gestión Usuarios
                 </a>
+                <a href="#" class="nav-item" data-view="ftp">
+                    <i data-lucide="upload-cloud"></i> Ingesta FTP
+                </a>
                 <a href="#" class="nav-item" data-view="settings">
                     <i data-lucide="sliders"></i> Ajustes
                 </a>
@@ -1802,6 +1805,96 @@
                 </div>
             </section>
 
+            <!-- VIEW: FTP INGESTION -->
+            <section id="ftp" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Ingesta de Logs por FTP</h1>
+                        <p class="subtitle">Recepción pasiva de logs para tomógrafos sin acceso SSH</p>
+                    </div>
+                </header>
+
+                <div class="settings-grid-wrapper">
+                    <div class="settings-grid">
+                        <!-- LEFT CARD: FTP SERVER CONFIGURATION & STATUS -->
+                        <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+                            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="server" style="color: var(--primary); width: 20px; height: 20px;"></i>
+                                Servidor FTP Embebido
+                            </h3>
+                            <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4;">
+                                El tomógrafo puede enviar archivos de logs de manera pasiva usando estas credenciales.
+                            </p>
+
+                            <form id="ftp-config-form" style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                                    <span style="color: var(--text-dim);">Estado:</span>
+                                    <span id="ftp-status-badge" class="pill pill-success" style="font-weight: 600;">ACTIVO</span>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.8rem; color: var(--text-dim);">Puerto FTP</label>
+                                    <input type="number" id="ftp-port-input" class="glass-input" value="2121" min="1024" max="65535" required style="width: 100%;">
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.8rem; color: var(--text-dim);">Usuario FTP</label>
+                                    <input type="text" id="ftp-user-input" class="glass-input" value="admin" required style="width: 100%;">
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.8rem; color: var(--text-dim);">Contraseña FTP</label>
+                                    <input type="password" id="ftp-pass-input" class="glass-input" value="admin" required style="width: 100%;">
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                                    <span style="color: var(--text-dim);">Ruta de Ingesta:</span>
+                                    <span style="color: var(--accent); font-size: 0.8rem; font-family: monospace;">data/ftp_logs/</span>
+                                </div>
+
+                                <button type="submit" class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 16px; margin-top: 8px;">
+                                    <i data-lucide="save" style="width: 16px; height: 16px;"></i> Guardar Configuración FTP
+                                </button>
+                            </form>
+
+                            <button id="btn-process-ftp" class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; padding: 10px 16px;">
+                                <i data-lucide="play" style="width: 16px; height: 16px;"></i> Procesar Logs Ahora
+                            </button>
+                        </div>
+
+                        <!-- RIGHT CARD: PENDING FILES IN QUEUE -->
+                        <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; min-height: 380px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
+                                <div>
+                                    <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin: 0;">
+                                        <i data-lucide="folder-open" style="color: var(--secondary); width: 20px; height: 20px;"></i>
+                                        Cola de Archivos Pendientes
+                                    </h3>
+                                    <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-top: 2px;">
+                                        Archivos transferidos por el tomógrafo que están en espera de procesamiento
+                                    </p>
+                                </div>
+                                <span id="ftp-pending-count" class="pill pill-info" style="font-size: 0.75rem; padding: 2px 8px;">0 archivos</span>
+                            </div>
+
+                            <div class="table-responsive" style="overflow-x: auto; width: 100%; margin-top: 8px;">
+                                <table class="glass-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                            <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Nombre de Archivo</th>
+                                            <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Tamaño</th>
+                                            <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Última Modificación</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ftp-files-list">
+                                        <!-- Dynamic FTP files -->
+                                        <tr>
+                                            <td colspan="3" class="text-center" style="padding: 20px; color: var(--text-dim);">No hay archivos pendientes en la cola</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- VIEW: SETTINGS -->
             <section id="settings" class="view-content">
                 <header class="glass-header">
@@ -2017,6 +2110,9 @@
                                         Rol</th>
                                     <th
                                         style="padding: 12px; font-weight: 600; color: var(--text-dim); font-size: 0.85rem;">
+                                        Dispositivo Asignado</th>
+                                    <th
+                                        style="padding: 12px; font-weight: 600; color: var(--text-dim); font-size: 0.85rem;">
                                         Contraseña</th>
                                     <th
                                         style="padding: 12px; font-weight: 600; color: var(--text-dim); font-size: 0.85rem; text-align: right;">
@@ -2190,6 +2286,13 @@
                                 <option value="admin">Administrador (Acceso Total)</option>
                                 <option value="operator">Operador (Monitoreo & NOC)</option>
                                 <option value="engineer">Ingeniero de Campo (Mantenimiento)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label
+                                style="display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-dim);">Dispositivo Asignado (Restricción)</label>
+                            <select id="user-device-input" class="glass-input" style="width: 100%; cursor: pointer;">
+                                <option value="">Todos los Dispositivos (Sin restricción)</option>
                             </select>
                         </div>
                         <div id="user-error-msg"

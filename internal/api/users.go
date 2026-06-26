@@ -24,13 +24,17 @@ func LoadUsersOnStartup() {
 		username VARCHAR(255) PRIMARY KEY,
 		password VARCHAR(255) NOT NULL,
 		role VARCHAR(50) NOT NULL,
-		full_name VARCHAR(255) NOT NULL
+		full_name VARCHAR(255) NOT NULL,
+		device_id VARCHAR(255) NULL
 	);`
 
 	_, err := db.GetDB().Exec(createTableQuery)
 	if err != nil {
 		log.Fatalf("[USERS] Error creating users table: %v", err)
 	}
+
+	// Upgrade schema if running on existing database
+	_, _ = db.GetDB().Exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS device_id VARCHAR(255);")
 
 	// Insert default users if table is empty
 	var count int
@@ -94,7 +98,7 @@ func HandleUsers(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		rows, err := db.GetDB().Query("SELECT username, password, role, full_name FROM users")
+		rows, err := db.GetDB().Query("SELECT username, password, role, full_name, device_id FROM users")
 		if err != nil {
 			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
 			return
@@ -104,8 +108,12 @@ func HandleUsers(w http.ResponseWriter, r *http.Request) {
 		var list []models.User
 		for rows.Next() {
 			var u models.User
-			if err := rows.Scan(&u.Username, &u.Password, &u.Role, &u.FullName); err != nil {
+			var deviceID sql.NullString
+			if err := rows.Scan(&u.Username, &u.Password, &u.Role, &u.FullName, &deviceID); err != nil {
 				continue
+			}
+			if deviceID.Valid {
+				u.DeviceID = deviceID.String
 			}
 			list = append(list, u)
 		}
@@ -124,8 +132,8 @@ func HandleUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		_, err := db.GetDB().Exec("INSERT INTO users (username, password, role, full_name) VALUES ($1, $2, $3, $4)",
-			u.Username, u.Password, u.Role, u.FullName)
+		_, err := db.GetDB().Exec("INSERT INTO users (username, password, role, full_name, device_id) VALUES ($1, $2, $3, $4, $5)",
+			u.Username, u.Password, u.Role, u.FullName, sql.NullString{String: u.DeviceID, Valid: u.DeviceID != ""})
 		if err != nil {
 			http.Error(w, `{"error": "El nombre de usuario ya existe o error en base de datos"}`, http.StatusConflict)
 			return
@@ -145,8 +153,8 @@ func HandleUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		res, err := db.GetDB().Exec("UPDATE users SET password = $1, role = $2, full_name = $3 WHERE username = $4",
-			u.Password, u.Role, u.FullName, u.Username)
+		res, err := db.GetDB().Exec("UPDATE users SET password = $1, role = $2, full_name = $3, device_id = $4 WHERE username = $5",
+			u.Password, u.Role, u.FullName, sql.NullString{String: u.DeviceID, Valid: u.DeviceID != ""}, u.Username)
 		
 		if err != nil {
 			http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
@@ -237,8 +245,9 @@ func HandleUsersLogin(w http.ResponseWriter, r *http.Request) {
 	password := req.Password
 
 	var u models.User
-	err := db.GetDB().QueryRow("SELECT username, password, role, full_name FROM users WHERE username = $1", username).
-		Scan(&u.Username, &u.Password, &u.Role, &u.FullName)
+	var deviceID sql.NullString
+	err := db.GetDB().QueryRow("SELECT username, password, role, full_name, device_id FROM users WHERE username = $1", username).
+		Scan(&u.Username, &u.Password, &u.Role, &u.FullName, &deviceID)
 
 	if err == sql.ErrNoRows || u.Password != password {
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -254,12 +263,17 @@ func HandleUsersLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if deviceID.Valid {
+		u.DeviceID = deviceID.String
+	}
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"user": map[string]string{
 			"username": u.Username,
 			"role":     u.Role,
 			"fullName": u.FullName,
+			"deviceId": u.DeviceID,
 		},
 	})
 }

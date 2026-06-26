@@ -17,6 +17,7 @@ type UnifiedLogEvent struct {
 	ID          string    `json:"id,omitempty"`        // Unique event ID (A-xxxx)
 	TicketID    string    `json:"ticketId,omitempty"`  // Linked ticket ID if any
 	TicketStatus string   `json:"ticketStatus,omitempty"` // Linked ticket status if any
+	DeviceID    string    `json:"deviceId,omitempty"`  // Originating device ID
 }
 
 // YangNode represents a hierarchical tree structure for YANG configuration.
@@ -78,4 +79,5 @@ type User struct {
 	Password string `json:"password"`
 	Role     string `json:"role"`     // "admin", "operator", "engineer"
 	FullName string `json:"fullName"`
+	DeviceID string `json:"deviceId,omitempty"` // Linked monitored device, empty means all
 }

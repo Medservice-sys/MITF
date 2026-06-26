@@ -160,6 +160,8 @@ document.querySelectorAll('.nav-item').forEach(item => {
             loadClassificationData('dicom', queryParams);
         } else if (['alerts', 'maintenance', 'stops'].includes(targetView)) {
             loadClassificationData(targetView, queryParams);
+        } else if (targetView === 'ftp') {
+            loadFTPData();
         }
     });
 });
@@ -606,15 +608,34 @@ async function fetchStatus() {
 
         if (response.ok) {
             const statusData = await response.json();
-            if (statusData.status === 'CONNECTED') {
-                dot.className = 'dot dot-green';
-                text.innerText = 'Conectado (SSH)';
+            
+            const restrictId = sessionStorage.getItem('user-device-id');
+            if (restrictId && configDevices.length > 0) {
+                const dev = configDevices.find(d => d.id === restrictId);
+                if (dev) {
+                    if (sidebarModel) sidebarModel.innerText = `${dev.name} (${dev.brand})`;
+                    if (dev.status === 'online') {
+                        dot.className = 'dot dot-green';
+                        text.innerText = 'Conectado (Online)';
+                    } else if (dev.status === 'degraded') {
+                        dot.className = 'dot dot-warning';
+                        text.innerText = 'Error SSH';
+                    } else {
+                        dot.className = 'dot dot-red';
+                        text.innerText = 'Desconectado';
+                    }
+                }
             } else {
-                dot.className = 'dot dot-red';
-                text.innerText = 'Falla Conexión GE';
+                if (statusData.status === 'CONNECTED') {
+                    dot.className = 'dot dot-green';
+                    text.innerText = 'Conectado (SSH)';
+                } else {
+                    dot.className = 'dot dot-red';
+                    text.innerText = 'Falla Conexión GE';
+                }
+                if (sidebarModel) sidebarModel.innerText = statusData.model || 'GE LightSpeed CT';
             }
 
-            if (sidebarModel) sidebarModel.innerText = statusData.model || 'GE LightSpeed CT';
             if (sidebarSW) sidebarSW.innerText = statusData.swVersion || '-';
             if (sidebarSN) sidebarSN.innerText = statusData.serialNumber || '-';
         } else {
@@ -638,16 +659,23 @@ async function refreshDashboard() {
     const dt = document.getElementById('date-to').value;
     const dashDate = document.getElementById('dash-date-filter').value;
     
+    const params = new URLSearchParams();
+    const restrictId = sessionStorage.getItem('user-device-id');
+    if (restrictId) {
+        params.append('deviceId', restrictId);
+    }
+
     if (dashDate) {
-        const params = new URLSearchParams();
         params.append('from', `${dashDate}T00:00:00Z`);
         params.append('to', `${dashDate}T23:59:59Z`);
-        queryParams = `?${params.toString()}`;
     } else if (df || dt) {
-        const params = new URLSearchParams();
         if (df) params.append('from', new Date(df).toISOString());
         if (dt) params.append('to', new Date(dt).toISOString());
-        queryParams = `?${params.toString()}`;
+    }
+
+    const pStr = params.toString();
+    if (pStr) {
+        queryParams = `?${pStr}`;
     }
     
     // Fetch Metrics
@@ -1513,6 +1541,7 @@ window.addEventListener('DOMContentLoaded', () => {
     loadConfigMode();
     initUserRole();
     initUserCrudEvents();
+    initFTPEvents();
 
     // Bind toggle button from dashboard mode banner
     const toggleBtn = document.getElementById('btn-toggle-mode-dash');
@@ -3026,6 +3055,7 @@ function initUserRole() {
                     sessionStorage.setItem('currentUser', data.user.username);
                     sessionStorage.setItem('user-role', data.user.role);
                     sessionStorage.setItem('user-fullname', data.user.fullName);
+                    sessionStorage.setItem('user-device-id', data.user.deviceId || '');
                     
                     if (errorMsg) errorMsg.style.display = 'none';
                     if (loginOverlay) loginOverlay.style.display = 'none';
@@ -3888,11 +3918,14 @@ function renderUsersTable() {
         tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
         
         const roleLabel = roleLabels[u.role] || `<span class="pill">${u.role}</span>`;
+        const devObj = configDevices.find(d => d.id === u.deviceId);
+        const deviceLabel = devObj ? `<span class="pill pill-muted" style="background: rgba(147, 197, 253, 0.1); color: var(--accent); border: 1px solid rgba(147, 197, 253, 0.2);">${escapeHtml(devObj.name)}</span>` : '<span style="color: var(--text-dim); font-size: 0.8rem;">Sin restricción</span>';
 
         tr.innerHTML = `
             <td style="padding: 12px; font-weight: 600; color: var(--text-main); font-family: monospace;">${escapeHtml(u.username)}</td>
             <td style="padding: 12px; color: var(--text);">${escapeHtml(u.fullName)}</td>
             <td style="padding: 12px;">${roleLabel}</td>
+            <td style="padding: 12px;">${deviceLabel}</td>
             <td style="padding: 12px; color: var(--text-dim); font-family: monospace;">••••••••</td>
             <td style="padding: 12px; text-align: right;">
                 <div style="display: inline-flex; gap: 8px;">
@@ -3958,6 +3991,7 @@ function openUserModal(mode, user = null) {
     const fullNameInput = document.getElementById('user-fullname-input');
     const passwordInput = document.getElementById('user-password-input');
     const roleInput = document.getElementById('user-role-input');
+    const deviceInput = document.getElementById('user-device-input');
     const errMsg = document.getElementById('user-error-msg');
 
     if (!modal || !form) return;
@@ -3966,6 +4000,17 @@ function openUserModal(mode, user = null) {
     if (errMsg) {
         errMsg.style.display = 'none';
         errMsg.textContent = '';
+    }
+
+    // Populate device options dynamically
+    if (deviceInput) {
+        deviceInput.innerHTML = '<option value="">Todos los Dispositivos (Sin restricción)</option>';
+        configDevices.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = `${d.name} (${d.brand} - ${d.host})`;
+            deviceInput.appendChild(opt);
+        });
     }
 
     modeInput.value = mode;
@@ -3977,6 +4022,7 @@ function openUserModal(mode, user = null) {
         usernameInput.style.opacity = 1;
         passwordInput.placeholder = 'Contraseña inicial';
         passwordInput.required = true;
+        if (deviceInput) deviceInput.value = '';
     } else {
         title.textContent = 'Editar Usuario';
         usernameInput.value = user.username;
@@ -3987,6 +4033,7 @@ function openUserModal(mode, user = null) {
         passwordInput.placeholder = 'Nueva contraseña';
         passwordInput.required = true;
         roleInput.value = user.role;
+        if (deviceInput) deviceInput.value = user.deviceId || '';
     }
 
     modal.classList.remove('hidden');
@@ -4022,9 +4069,10 @@ function initUserCrudEvents() {
         const fullName = document.getElementById('user-fullname-input').value.trim();
         const password = document.getElementById('user-password-input').value;
         const role = document.getElementById('user-role-input').value;
+        const deviceId = document.getElementById('user-device-input')?.value || '';
         const errMsg = document.getElementById('user-error-msg');
 
-        const payload = { username, fullName, password, role };
+        const payload = { username, fullName, password, role, deviceId };
 
         try {
             const res = await fetch('/api/users', {
@@ -4065,3 +4113,135 @@ function escapeHtml(text) {
     };
     return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
 }
+
+// ----------------------------------------------------
+// 9. FTP LOGS INGESTION MODULE
+// ----------------------------------------------------
+async function loadFTPData() {
+    const listContainer = document.getElementById('ftp-files-list');
+    if (!listContainer) return;
+
+    try {
+        // Get server status
+        const statusRes = await fetch('/api/ftp/status');
+        if (statusRes.ok) {
+            const status = await statusRes.json();
+            const badge = document.getElementById('ftp-status-badge');
+            if (badge) {
+                if (status.running) {
+                    badge.className = 'pill pill-success';
+                    badge.innerText = 'ACTIVO';
+                } else {
+                    badge.className = 'pill pill-critical';
+                    badge.innerText = 'INACTIVO';
+                }
+            }
+
+            const portInput = document.getElementById('ftp-port-input');
+            const userInput = document.getElementById('ftp-user-input');
+            const passInput = document.getElementById('ftp-pass-input');
+            if (portInput && document.activeElement !== portInput) portInput.value = status.port;
+            if (userInput && document.activeElement !== userInput) userInput.value = status.user;
+            if (passInput && document.activeElement !== passInput) passInput.value = status.password;
+        }
+
+        // Get files
+        const filesRes = await fetch('/api/ftp/files');
+        if (filesRes.ok) {
+            const files = await filesRes.json() || [];
+            
+            const pendingCount = document.getElementById('ftp-pending-count');
+            if (pendingCount) {
+                pendingCount.innerText = `${files.length} archivos`;
+            }
+
+            listContainer.innerHTML = '';
+            if (files.length === 0) {
+                listContainer.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="text-center" style="padding: 20px; color: var(--text-dim);">No hay archivos pendientes en la cola</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            files.forEach(f => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+                
+                const sizeKb = (f.size / 1024).toFixed(2);
+                const modifiedStr = new Date(f.modified).toLocaleString();
+
+                tr.innerHTML = `
+                    <td style="padding: 12px; font-weight: 600; color: var(--text-main); font-family: monospace;">${escapeHtml(f.name)}</td>
+                    <td style="padding: 12px; color: var(--text);">${sizeKb} KB</td>
+                    <td style="padding: 12px; color: var(--text-dim);">${modifiedStr}</td>
+                `;
+                listContainer.appendChild(tr);
+            });
+        }
+    } catch (err) {
+        console.error("Error loading FTP data:", err);
+    }
+}
+
+function initFTPEvents() {
+    const btnProcess = document.getElementById('btn-process-ftp');
+    if (btnProcess) {
+        btnProcess.addEventListener('click', async () => {
+            btnProcess.disabled = true;
+            btnProcess.innerHTML = `Procesando...`;
+            try {
+                const res = await fetch('/api/ftp/process', {
+                    method: 'POST'
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    alert(`Éxito: Se procesaron ${result.processedCount} archivos de logs.`);
+                    loadFTPData();
+                } else {
+                    alert("Error al procesar los archivos de logs.");
+                }
+            } catch (err) {
+                console.error("Error processing FTP logs:", err);
+                alert("Error de conexión al procesar logs.");
+            } finally {
+                btnProcess.disabled = false;
+                btnProcess.innerHTML = `<i data-lucide="play" style="width: 16px; height: 16px;"></i> Procesar Logs Ahora`;
+                if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                    window.lucide.createIcons();
+                }
+            }
+        });
+    }
+
+    const ftpForm = document.getElementById('ftp-config-form');
+    if (ftpForm) {
+        ftpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const port = parseInt(document.getElementById('ftp-port-input').value);
+            const user = document.getElementById('ftp-user-input').value;
+            const password = document.getElementById('ftp-pass-input').value;
+
+            try {
+                const res = await fetch('/api/ftp/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ port, user, password })
+                });
+
+                if (res.ok) {
+                    alert("Configuración FTP guardada y servidor reiniciado exitosamente.");
+                    loadFTPData();
+                } else {
+                    const errText = await res.text();
+                    alert("Error al guardar configuración FTP: " + errText);
+                }
+            } catch (err) {
+                console.error("Error saving FTP config:", err);
+                alert("Error de red al guardar la configuración FTP.");
+            }
+        });
+    }
+}
+

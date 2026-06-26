@@ -83,6 +83,9 @@ func StartPollingEngine() {
 
 				newEvents := p.Parse(f.Lines, f.Name)
 				if len(newEvents) > 0 {
+					for idx := range newEvents {
+						newEvents[idx].DeviceID = f.DeviceID
+					}
 					Store.Events = append(Store.Events, newEvents...)
 					totalNewEvents += len(newEvents)
 				}

@@ -99,78 +99,7 @@ func init() {
 
 	// Create data directory and load configurations
 	_ = os.MkdirAll("data", 0755)
-	loadConfigOnStartup()
 	loadClassificationsOnStartup()
-}
-
-func LoadDevicesOnStartup() {
-	DeviceProfilesMu.Lock()
-	defer DeviceProfilesMu.Unlock()
-
-	data, err := os.ReadFile("data/devices.json")
-	if err == nil {
-		if err := json.Unmarshal(data, &DeviceProfiles); err == nil && len(DeviceProfiles) > 0 {
-			return
-		}
-	}
-
-	// Fallback to migrating the device defined in env
-	host := os.Getenv("CT_SSH_HOST")
-	if host != "" {
-		brand := "GE" // Default brand
-		user := os.Getenv("CT_SSH_USER")
-		pass := os.Getenv("CT_SSH_PASSWORD")
-		dir := os.Getenv("CT_REMOTE_LOG_DIR")
-		mode := os.Getenv("CT_SSH_MODE")
-		if mode == "" {
-			mode = "legacy"
-		}
-		
-		defaultDev := models.DeviceProfile{
-			ID:           "default-ne-1",
-			Name:         "GE Tomógrafo Principal",
-			Host:         host,
-			User:         user,
-			Password:     pass,
-			Brand:        brand,
-			RemoteLogDir: dir,
-			SSHMode:      mode,
-			Active:       true,
-		}
-		DeviceProfiles = []models.DeviceProfile{defaultDev}
-		
-		// Save it
-		bytes, _ := json.MarshalIndent(DeviceProfiles, "", "  ")
-		_ = os.WriteFile("data/devices.json", bytes, 0644)
-	}
-}
-
-func loadConfigOnStartup() {
-	OperationModeMu.Lock()
-	defer OperationModeMu.Unlock()
-
-	file, err := os.ReadFile("data/config.json")
-	if err != nil {
-		// Default config
-		OperationMode = "online"
-		GlobalRefreshSec = 15
-		return
-	}
-
-	var cfg struct {
-		OperationMode   string `json:"operationMode"`
-		RefreshInterval int    `json:"refreshInterval"`
-	}
-	if err := json.Unmarshal(file, &cfg); err == nil {
-		if cfg.OperationMode != "" {
-			OperationMode = cfg.OperationMode
-		}
-		if cfg.RefreshInterval >= 5 {
-			GlobalRefreshSec = cfg.RefreshInterval
-		} else {
-			GlobalRefreshSec = 15
-		}
-	}
 }
 
 func loadClassificationsOnStartup() {
