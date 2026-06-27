@@ -150,6 +150,8 @@ document.querySelectorAll('.nav-item').forEach(item => {
         } else if (targetView === 'admin-classifications') {
             loadAdminClassifications();
             loadHealthConfig();
+        } else if (targetView === 'acknowledges') {
+            loadAdminClassifications(true);
         } else if (targetView === 'users') {
             loadUsersData();
         } else if (targetView === 'hardware') {
@@ -410,6 +412,12 @@ function renderMiniTable(events) {
             ev.message.toLowerCase().includes(searchVal) ||
             ev.process.toLowerCase().includes(searchVal)
         );
+    }
+    
+    // Filter by severity
+    const activeSev = window.miniSeverityFilter || "";
+    if (activeSev) {
+        dataList = dataList.filter(ev => ev.severity === activeSev);
     }
     
     // Sort
@@ -1542,6 +1550,9 @@ window.addEventListener('DOMContentLoaded', () => {
     initUserRole();
     initUserCrudEvents();
     initFTPEvents();
+    initAcknowledgedAlarmsEvents();
+    initMiniSeverityFilters();
+    initFullSeverityFilters();
 
     // Bind toggle button from dashboard mode banner
     const toggleBtn = document.getElementById('btn-toggle-mode-dash');
@@ -2211,8 +2222,6 @@ let loadedAlarms = [];
 
 async function loadAdminClassifications(force = false) {
     if (!force && adminClassificationsLoaded) return;
-    const tbody = document.getElementById('classifications-tbody');
-    if (!tbody) return;
 
     try {
         const res = await fetch('/api/admin/classifications');
@@ -2222,6 +2231,7 @@ async function loadAdminClassifications(force = false) {
         loadedAlarms = data.alarms || [];
 
         renderClassificationsTable();
+        renderAcknowledgedAlarmsTable();
         adminClassificationsLoaded = true;
     } catch (err) {
         console.error("Error loading classifications:", err);
@@ -3626,15 +3636,11 @@ if (menuAckAlarm) {
 
             if (res.ok) {
                 alert(`Alarma ${contextSelectedEvent.id || 'seleccionada'} reconocida. Nivel de severidad reajustado.`);
-                if (typeof loadClassificationData === 'function') {
-                    const activeNav = document.querySelector('.nav-item.active');
-                    if (activeNav) {
-                        const view = activeNav.getAttribute('data-view');
-                        if (['hardware', 'dicom', 'alerts', 'maintenance', 'stops'].includes(view)) {
-                            loadClassificationData(view, getCurrentQueryParams());
-                        }
-                    }
-                }
+                adminClassificationsLoaded = false;
+                await loadAdminClassifications(true);
+                showView('acknowledges');
+                
+                if (typeof fetchLogs === 'function') fetchLogs(getCurrentQueryParams());
                 if (typeof loadHistoryData === 'function') loadHistoryData(getCurrentQueryParams());
                 if (typeof fetchEvents === 'function') fetchEvents();
             } else {
@@ -4241,6 +4247,276 @@ function initFTPEvents() {
                 console.error("Error saving FTP config:", err);
                 alert("Error de red al guardar la configuración FTP.");
             }
+        });
+    }
+}
+
+// ----------------------------------------------------
+// 10. ALARMAS RECONOCIDAS (ACKNOWLEDGES) MODULE
+// ----------------------------------------------------
+function renderAcknowledgedAlarmsTable() {
+    const tbody = document.getElementById('ack-tbody');
+    if (!tbody) return;
+
+    const query = (document.getElementById('ack-search')?.value || "").toLowerCase().trim();
+    tbody.innerHTML = "";
+
+    const confirmedAlarms = loadedAlarms.filter(item => item.status === 'CONFIRMED');
+
+    let filtered = confirmedAlarms.filter(item => {
+        return (item.code || "").toLowerCase().includes(query) || 
+               (item.label || "").toLowerCase().includes(query) || 
+               (item.description || "").toLowerCase().includes(query) ||
+               (item.subsystem || "").toLowerCase().includes(query);
+    });
+
+    const activeFilter = window.ackSeverityFilter || "ALL";
+    if (activeFilter !== "ALL") {
+        filtered = filtered.filter(item => {
+            const currentOverride = currentClassifications[item.code] || "";
+            if (activeFilter === "WARNING") {
+                return ['WARNING', 'WARN_MINOR', 'MAJOR_ERROR'].includes(currentOverride);
+            }
+            return currentOverride === activeFilter;
+        });
+    }
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="padding: 20px; color: var(--text-dim);">No se encontraron alarmas reconocidas.</td></tr>`;
+        return;
+    }
+
+    filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        
+        const getPill = (sev) => {
+            const cls = getSeverityPillClass(sev);
+            return `<span class="pill ${cls}">${sev}</span>`;
+        };
+
+        const currentOverride = currentClassifications[item.code] || "";
+
+        tr.innerHTML = `
+            <td>
+                <div style="font-weight: 600; font-size: 0.85rem;">${item.label}</div>
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dim); margin-top: 2px;">${item.code}</div>
+                <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; font-style: italic;">${item.description}</div>
+            </td>
+            <td>
+                <span class="pill pill-info" style="text-transform: uppercase;">${item.subsystem}</span>
+            </td>
+            <td>
+                ${getPill(item.defaultSeverity)}
+            </td>
+            <td>
+                <select class="admin-select ack-classification-select" data-code="${item.code}" style="padding: 4px 8px; font-size: 0.75rem;">
+                    <option value="CRITICAL" ${currentOverride === 'CRITICAL' ? 'selected' : ''}>CRITICAL</option>
+                    <option value="WARNING" ${currentOverride === 'WARNING' || currentOverride === 'WARN_MINOR' || currentOverride === 'MAJOR_ERROR' ? 'selected' : ''}>WARNING</option>
+                    <option value="INFO" ${currentOverride === 'INFO' ? 'selected' : ''}>INFO</option>
+                    <option value="IGNORE" ${currentOverride === 'IGNORE' ? 'selected' : ''}>IGNORE / EXCLUDE</option>
+                    <option value="INFORMATIONAL" ${currentOverride === 'INFORMATIONAL' ? 'selected' : ''}>INFORMATIONAL</option>
+                </select>
+            </td>
+            <td style="text-align: right; padding-right: 16px;">
+                <div style="display: inline-flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap;">
+                    <button class="btn btn-primary btn-sm ack-create-ticket-btn" data-code="${item.code}" data-severity="${currentOverride}" data-label="${item.label}" data-subsystem="${item.subsystem}" style="padding: 4px 8px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px;">
+                        <i data-lucide="ticket" style="width: 12px; height: 12px;"></i> Crear Ticket
+                    </button>
+                    <button class="btn btn-secondary glass-btn btn-sm ack-help-btn" data-code="${item.code}" style="padding: 4px 8px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px;">
+                        <i data-lucide="eye" style="width: 12px; height: 12px;"></i> Detalle
+                    </button>
+                    <button class="btn btn-danger btn-sm ack-undo-btn" data-code="${item.code}" style="padding: 4px 8px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px;">
+                        <i data-lucide="undo" style="width: 12px; height: 12px;"></i> Deshacer ACK
+                    </button>
+                </div>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+    }
+
+    // Attach event listeners to the select dropdowns in this table
+    document.querySelectorAll('.ack-classification-select').forEach(sel => {
+        sel.addEventListener('change', async (e) => {
+            const code = e.target.getAttribute('data-code');
+            const val = e.target.value;
+            
+            // Post single update to server
+            try {
+                const res = await fetch('/api/admin/classifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tceCode: code,
+                        severity: val
+                    })
+                });
+                if (res.ok) {
+                    currentClassifications[code] = val;
+                    adminClassificationsLoaded = false;
+                    await loadAdminClassifications(true);
+                    if (typeof fetchLogs === 'function') fetchLogs(getCurrentQueryParams());
+                } else {
+                    alert("Error al actualizar la clasificación.");
+                }
+            } catch (err) {
+                console.error("Error updating classification from Acknowledges:", err);
+            }
+        });
+    });
+
+    // Undo ACK (removes override)
+    document.querySelectorAll('.ack-undo-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const code = btn.getAttribute('data-code');
+            try {
+                const res = await fetch('/api/admin/classifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tceCode: code,
+                        severity: 'DEFAULT'
+                    })
+                });
+                if (res.ok) {
+                    delete currentClassifications[code];
+                    adminClassificationsLoaded = false;
+                    await loadAdminClassifications(true);
+                    if (typeof fetchLogs === 'function') fetchLogs(getCurrentQueryParams());
+                } else {
+                    alert("Error al deshacer el reconocimiento.");
+                }
+            } catch (err) {
+                console.error("Error undoing classification override:", err);
+            }
+        });
+    });
+
+    // Help details modal
+    document.querySelectorAll('.ack-help-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const code = btn.getAttribute('data-code');
+            if (typeof openHelpModal === 'function') {
+                openHelpModal(code);
+            }
+        });
+    });
+
+    // Create ticket from ACK
+    document.querySelectorAll('.ack-create-ticket-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const code = btn.getAttribute('data-code');
+            const severity = btn.getAttribute('data-severity');
+            const label = btn.getAttribute('data-label');
+            const subsystem = btn.getAttribute('data-subsystem');
+
+            // Find an event from allEvents to link if possible, otherwise we link by code
+            const relatedEvent = allEvents.find(ev => ev.tceCode === code) || {};
+            linkedAlarmId = relatedEvent.id || null;
+
+            document.getElementById('ticket-title').value = `[${code}] Falla en ${subsystem.toUpperCase()} - GE CT: ${label}`;
+            
+            let sev = 'warning';
+            if (severity === 'CRITICAL' || severity === 'SEVERE_ERROR') {
+                sev = 'critical';
+            } else if (severity === 'WARNING' || severity === 'MAJOR_ERROR') {
+                sev = 'major';
+            }
+            document.getElementById('ticket-severity').value = sev;
+            
+            let priority = '3';
+            if (sev === 'critical') priority = '1';
+            else if (sev === 'major') priority = '2';
+            document.getElementById('ticket-priority').value = priority;
+
+            let group = 'grp.noc-transporte';
+            const sub = (subsystem || '').toUpperCase();
+            if (sub.includes('COOLING') || sub.includes('POWER') || sub.includes('GANTRY') || sub.includes('TUBE')) {
+                group = 'grp.infra-sitio';
+            } else if (sub.includes('CONNECTIVITY') || sub.includes('DICOM') || sub.includes('IP') || sub.includes('COMM')) {
+                group = 'grp.noc-datos';
+            }
+            document.getElementById('ticket-group').value = group;
+
+            document.getElementById('ticket-note').value = `Ticket iniciado desde Alarma Reconocida: ${label} (${code})`;
+            
+            if (linkedAlarmId) {
+                document.getElementById('ticket-logs').value = linkedAlarmId;
+                document.getElementById('lbl-linked-alarm-id').textContent = `#${linkedAlarmId}`;
+                document.getElementById('val-canonical-type').textContent = code;
+                document.getElementById('val-network-element').textContent = relatedEvent.host || 'Tomógrafo GE';
+                document.getElementById('val-affected-service').textContent = "Servicio de Tomografía (Dosis/Adquisición) / Pacientes Programados";
+                document.getElementById('val-alarm-severity').textContent = relatedEvent.severity || severity;
+                document.getElementById('atrec-enrichment-panel').classList.remove('hidden');
+            } else {
+                document.getElementById('ticket-logs').value = '';
+                document.getElementById('atrec-enrichment-panel').classList.add('hidden');
+            }
+
+            showView('bitacora');
+            if (window.lucide) lucide.createIcons();
+        });
+    });
+}
+
+function initAcknowledgedAlarmsEvents() {
+    const ackSearch = document.getElementById('ack-search');
+    if (ackSearch) {
+        ackSearch.addEventListener('input', renderAcknowledgedAlarmsTable);
+    }
+
+    document.querySelectorAll('.ack-filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.ack-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            window.ackSeverityFilter = btn.getAttribute('data-severity');
+            renderAcknowledgedAlarmsTable();
+        });
+    });
+}
+
+function initMiniSeverityFilters() {
+    document.querySelectorAll('.mini-severity-filter').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.mini-severity-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            window.miniSeverityFilter = btn.getAttribute('data-severity');
+            renderMiniTable();
+        });
+    });
+}
+
+function initFullSeverityFilters() {
+    document.querySelectorAll('.severity-pill-filter').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.severity-pill-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const targetSeverity = btn.getAttribute('data-severity');
+            const selectEl = document.getElementById('filter-severity');
+            if (selectEl) {
+                selectEl.value = targetSeverity;
+            }
+            applyFullLogFilters();
+        });
+    });
+
+    // Also, sync the button pills if the select dropdown changes manually
+    const selectEl = document.getElementById('filter-severity');
+    if (selectEl) {
+        selectEl.addEventListener('change', () => {
+            const val = selectEl.value;
+            document.querySelectorAll('.severity-pill-filter').forEach(btn => {
+                if (btn.getAttribute('data-severity') === val) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
         });
     }
 }

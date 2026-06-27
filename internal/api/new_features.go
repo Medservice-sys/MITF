@@ -684,14 +684,39 @@ func HandleAdminClassifications(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
-		var newRules map[string]string
-		if err := json.NewDecoder(r.Body).Decode(&newRules); err != nil {
-			http.Error(w, "Invalid body", http.StatusBadRequest)
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Failed to read body", http.StatusBadRequest)
 			return
 		}
 
+		// Try to decode as a single classification rule update
+		var singleUpdate struct {
+			TCECode  string `json:"tceCode"`
+			Severity string `json:"severity"`
+		}
+		
+		isSingleUpdate := false
+		if err := json.Unmarshal(bodyBytes, &singleUpdate); err == nil && singleUpdate.TCECode != "" {
+			isSingleUpdate = true
+		}
+
 		CustomClassificationsMu.Lock()
-		CustomClassifications = newRules
+		if isSingleUpdate {
+			if singleUpdate.Severity == "DEFAULT" || singleUpdate.Severity == "" {
+				delete(CustomClassifications, singleUpdate.TCECode)
+			} else {
+				CustomClassifications[singleUpdate.TCECode] = singleUpdate.Severity
+			}
+		} else {
+			var newRules map[string]string
+			if err := json.Unmarshal(bodyBytes, &newRules); err != nil {
+				CustomClassificationsMu.Unlock()
+				http.Error(w, "Invalid body", http.StatusBadRequest)
+				return
+			}
+			CustomClassifications = newRules
+		}
 		saveClassifications()
 		CustomClassificationsMu.Unlock()
 

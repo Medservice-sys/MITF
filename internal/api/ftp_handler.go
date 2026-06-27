@@ -123,25 +123,33 @@ func ProcessFTPLogs() (int, error) {
 		return 0, fmt.Errorf("failed to create archive directory: %w", err)
 	}
 
-	files, err := os.ReadDir(ftpDir)
-	if err != nil {
-		return 0, fmt.Errorf("failed to read FTP directory: %w", err)
-	}
+	DeviceProfilesMu.RLock()
+	profilesCopy := make([]models.DeviceProfile, len(DeviceProfiles))
+	copy(profilesCopy, DeviceProfiles)
+	DeviceProfilesMu.RUnlock()
 
 	totalProcessed := 0
 	totalNewEvents := 0
 	var newEventsBatch []models.UnifiedLogEvent
 
-	for _, f := range files {
-		if f.IsDir() || f.Name() == "archive" {
-			continue
+	err := filepath.WalkDir(ftpDir, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			if path == archiveDir || strings.HasPrefix(path, archiveDir+string(filepath.Separator)) {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 
-		filePath := filepath.Join(ftpDir, f.Name())
+		fileName := d.Name()
+		filePath := path
+
 		data, err := os.ReadFile(filePath)
 		if err != nil {
-			log.Printf("[FTP PROCESS] Error reading file %s: %v", f.Name(), err)
-			continue
+			log.Printf("[FTP PROCESS] Error reading file %s: %v", fileName, err)
+			return nil
 		}
 
 		rawLines := strings.Split(string(data), "\n")
@@ -155,43 +163,65 @@ func ProcessFTPLogs() (int, error) {
 
 		var p parser.LogParser
 
-		if strings.Contains(f.Name(), "gesys_aurct") {
+		if strings.Contains(fileName, "gesys_aurct") {
 			p = &parser.GesysParser{}
-		} else if strings.Contains(f.Name(), "scanmgr") {
+		} else if strings.Contains(fileName, "scanmgr") {
 			p = &parser.ScanMgrParser{}
-		} else if strings.Contains(f.Name(), "device_eventlog") {
+		} else if strings.Contains(fileName, "device_eventlog") {
 			p = &parser.DeviceParser{}
-		} else if strings.Contains(f.Name(), "recon") {
+		} else if strings.Contains(fileName, "recon") {
 			p = &parser.ReconParser{}
-		} else if strings.Contains(f.Name(), "sysstate") {
+		} else if strings.Contains(fileName, "sysstate") {
 			p = &parser.SysStateParser{}
-		} else if strings.Contains(f.Name(), "displayManager") {
+		} else if strings.Contains(fileName, "displayManager") {
 			p = &parser.DisplayManagerParser{}
-		} else if strings.Contains(f.Name(), "csdError") {
+		} else if strings.Contains(fileName, "csdError") {
 			p = &parser.CsdErrorParser{}
-		} else if strings.Contains(f.Name(), "ssw.dastool.hist") {
+		} else if strings.Contains(fileName, "ssw.dastool.hist") {
 			p = &parser.DasToolHistParser{}
 		} else {
-			log.Printf("[FTP PROCESS] No parser found for file %s, skipping", f.Name())
-			continue
+			log.Printf("[FTP PROCESS] No parser found for file %s, skipping", fileName)
+			return nil
 		}
 
-		newEvents := p.Parse(cleanLines, f.Name())
+		newEvents := p.Parse(cleanLines, fileName)
 		if len(newEvents) > 0 {
+			var fileDeviceID string
+			relPath, _ := filepath.Rel(ftpDir, filePath)
+			relPathLower := strings.ToLower(relPath)
+			for _, dev := range profilesCopy {
+				devIDLower := strings.ToLower(dev.ID)
+				devNameLower := strings.ToLower(dev.Name)
+				if strings.Contains(relPathLower, devIDLower) || strings.Contains(relPathLower, devNameLower) {
+					fileDeviceID = dev.ID
+					break
+				}
+			}
+
+			for idx := range newEvents {
+				newEvents[idx].DeviceID = fileDeviceID
+			}
 			newEventsBatch = append(newEventsBatch, newEvents...)
 			totalNewEvents += len(newEvents)
 		}
 
-		// Move to archive
-		destPath := filepath.Join(archiveDir, fmt.Sprintf("%d_%s", time.Now().Unix(), f.Name()))
+		// Move to archive with flattened name to avoid subfolder collisions
+		relPath, _ := filepath.Rel(ftpDir, filePath)
+		flatName := strings.ReplaceAll(relPath, string(filepath.Separator), "_")
+		destPath := filepath.Join(archiveDir, fmt.Sprintf("%d_%s", time.Now().Unix(), flatName))
 		if err := os.Rename(filePath, destPath); err != nil {
-			log.Printf("[FTP PROCESS] Error moving file %s to archive: %v", f.Name(), err)
+			log.Printf("[FTP PROCESS] Error moving file %s to archive: %v", fileName, err)
 			if dataCopyErr := os.WriteFile(destPath, data, 0644); dataCopyErr == nil {
 				os.Remove(filePath)
 			}
 		}
 
 		totalProcessed++
+		return nil
+	})
+
+	if err != nil {
+		return totalProcessed, err
 	}
 
 	if totalNewEvents > 0 {

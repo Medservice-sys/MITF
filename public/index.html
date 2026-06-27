@@ -83,6 +83,9 @@
                 <a href="#" class="nav-item" data-view="bitacora">
                     <i data-lucide="book-open"></i> Bitácora
                 </a>
+                <a href="#" class="nav-item" data-view="acknowledges">
+                    <i data-lucide="check-square"></i> Reconocidas (ACK)
+                </a>
                 <a href="#" class="nav-item" data-view="maintenance">
                     <i data-lucide="thermometer"></i> Calentamientos
                 </a>
@@ -457,8 +460,23 @@
 
                 <!-- Recent Logs Mini-Table -->
                 <div class="table-box glass-panel">
-                    <div class="table-header">
-                        <h3>Logs Recientes (Últimos 10)</h3>
+                    <div class="table-header" style="flex-wrap: wrap; gap: 12px;">
+                        <h3>Logs Recientes</h3>
+                        <div class="mini-severity-filters" style="display: flex; gap: 6px; align-items: center;">
+                            <span style="font-size: 0.75rem; color: var(--text-dim); margin-right: 4px; font-weight: 500;">Severidad:</span>
+                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter active" data-severity="" style="padding: 2px 8px; font-size: 0.7rem;">
+                                Todos
+                            </button>
+                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter" data-severity="SEVERE_ERROR" style="padding: 2px 8px; font-size: 0.7rem; border-left: 2px solid var(--critical);">
+                                Crítico
+                            </button>
+                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter" data-severity="WARNING" style="padding: 2px 8px; font-size: 0.7rem; border-left: 2px solid var(--warning);">
+                                Warning
+                            </button>
+                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter" data-severity="INFORMATIONAL" style="padding: 2px 8px; font-size: 0.7rem; border-left: 2px solid var(--info);">
+                                Info
+                            </button>
+                        </div>
                         <div class="search-box">
                             <i data-lucide="search"></i>
                             <input type="text" id="mini-search" placeholder="Filtrar por mensaje..."
@@ -535,6 +553,22 @@
                 </div>
 
                 <div class="table-box glass-panel margin-top">
+                    <!-- Quick Severity Filter Pills -->
+                    <div class="quick-severity-filters" style="display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 0.8rem; color: var(--text-dim); margin-right: 8px; font-weight: 500;">Filtrar Rápido:</span>
+                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter active" data-severity="" style="padding: 4px 10px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
+                            Todas
+                        </button>
+                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter" data-severity="SEVERE_ERROR" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--critical); display: inline-flex; align-items: center; gap: 4px;">
+                            Crítico (SEVERE)
+                        </button>
+                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter" data-severity="WARNING" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--warning); display: inline-flex; align-items: center; gap: 4px;">
+                            Warning (WARNING)
+                        </button>
+                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter" data-severity="INFORMATIONAL" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--info); display: inline-flex; align-items: center; gap: 4px;">
+                            Info (INFO)
+                        </button>
+                    </div>
                     <div class="table-wrapper">
                         <table class="glass-table">
                             <thead>
@@ -1495,6 +1529,73 @@
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: ALARMAS RECONOCIDAS (ACKNOWLEDGES) -->
+            <section id="acknowledges" class="view-content">
+                <header class="glass-header">
+                    <div class="header-title">
+                        <h1>Alarmas Reconocidas (ACK)</h1>
+                        <p class="subtitle">Gestión y clasificación de eventos de falla reconocidos por el operador</p>
+                    </div>
+                </header>
+
+                <div class="admin-card glass-panel" style="margin-top: 24px; padding: 24px;">
+                    <div class="table-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h3 style="margin-bottom: 4px;">Registro de Reglas de Reconocimiento Activas</h3>
+                            <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0;">
+                                Estas alarmas han sido reconocidas. Puede modificar su severidad final o crear un ticket de falla de forma directa.
+                            </p>
+                        </div>
+                        <div class="search-box" style="position: relative;">
+                            <input type="text" id="ack-search" placeholder="Buscar alarma..." class="glass-input" style="padding-left: 32px; width: 220px;">
+                            <i data-lucide="search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-dim);"></i>
+                        </div>
+                    </div>
+
+                    <!-- Quick Severity Filter Bar for ACKs -->
+                    <div class="ack-severity-filters" style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 0.8rem; color: var(--text-dim); margin-right: 8px; font-weight: 500;">Filtrar Rápido (Severidad):</span>
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn active" data-severity="ALL" style="padding: 4px 10px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
+                            Todas
+                        </button>
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="CRITICAL" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--critical); display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="dot dot-red" style="width: 8px; height: 8px; background-color: var(--critical);"></span> Crítico (CRITICAL)
+                        </button>
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="WARNING" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--warning); display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="dot dot-yellow" style="width: 8px; height: 8px; background-color: var(--warning);"></span> Warning (WARNING)
+                        </button>
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="INFO" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--info); display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="dot dot-blue" style="width: 8px; height: 8px; background-color: var(--info);"></span> Info (INFO)
+                        </button>
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="IGNORE" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--text-dim); display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="dot dot-gray" style="width: 8px; height: 8px; background-color: var(--text-dim);"></span> Excluida (IGNORE)
+                        </button>
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="INFORMATIONAL" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--primary); display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="dot dot-green" style="width: 8px; height: 8px; background-color: var(--primary);"></span> Reconocida (INFORMATIONAL)
+                        </button>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th>Código / Evento</th>
+                                    <th>Subsistema</th>
+                                    <th>Severidad Base</th>
+                                    <th>Severidad ACK (Actual)</th>
+                                    <th style="text-align: right; padding-right: 16px;">Acciones de Gestión</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ack-tbody">
+                                <tr>
+                                    <td colspan="5" class="text-center" style="padding: 20px; color: var(--text-dim);">No hay alarmas reconocidas actualmente.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
