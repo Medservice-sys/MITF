@@ -11,9 +11,9 @@ services:
     # Using host network mode ensures the container can access local VM networks 
     # (such as KVM/libvirt VM on 192.168.122.80) without bridge routing/firewall blocks.
     # It also binds the application port (e.g. 8080) directly to the host's LAN IP.
-    network_mode: "host"
-    # ports:
-    #   - "7000:7000"
+    # network_mode: "host"
+    ports:
+      - "7000:7000"
     env_file:
       - .env
       

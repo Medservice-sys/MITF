@@ -12,6 +12,9 @@ Este manual describe el funcionamiento paso a paso del panel de telemetría y ge
 5. [Gestión de Reglas Reconocidas (ACK Panel)](#5-gestión-de-reglas-reconocidas-ack-panel)
 6. [Creación de Tickets de Falla (Bitácora - ATREC)](#6-creación-de-tickets-de-falla-bitácora---atrec)
 7. [Clasificación de Alertas y Catálogo de Eventos](#7-clasificación-de-alertas-y-catálogo-de-eventos)
+8. [Administración de Equipos en Laptop de Diagnóstico (Movilidad)](#8-administración-de-equipos-en-laptop-de-diagnóstico-movilidad-entre-sitios)
+9. [Gestión de Servicios y Control de Red](#9-gestión-de-servicios-y-control-de-red)
+
 
 ---
 
@@ -96,3 +99,68 @@ Diseñado bajo el estándar **TMF621/TMF642** para mantener trazabilidad absolut
 Esta sección (administrada por ingenieros L2/L3) permite registrar nuevas reglas globales.
 *   **Registrar Nuevo Evento:** Permite agregar un código aprendido (`TCE Code`), asignarle un subsistema y una guía de diagnóstico inicial para los operadores.
 *   **Reglas de Descarte (IGNORE):** Si clasifica un evento como `IGNORE`, el sistema omitirá automáticamente esta alarma en las métricas de fallas del tomógrafo, evitando alertas redundantes y reduciendo el ruido en el NOC.
+
+---
+
+## 8. Administración de Equipos en Laptop de Diagnóstico (Movilidad entre Sitios)
+
+Al llevar su laptop a diferentes centros de diagnóstico, deberá configurar los equipos clínicos para iniciar la telemetría en línea.
+
+### Pasos para modificar o añadir nuevos tomógrafos/resonadores:
+1. Inicie sesión en la aplicación como **Administrador** (Ej: usuario `admin`).
+2. Diríjase a la sección **Ajustes del Sistema** en el menú lateral.
+3. En la tarjeta **Equipos a Monitorear (NEs)**:
+    *   Para **editar** uno de los tomógrafos predeterminados (`GE Tomógrafo aurct` o `GE Cotahuma CT03`), haga clic en el botón **Editar** de la fila correspondiente.
+    *   Para **añadir** un nuevo tomógrafo/resonador (General Electric, Philips, Siemens, Toshiba, etc.), haga clic en **+ Añadir Equipo**.
+4. En el modal flotante, complete los campos:
+    *   **Nombre:** Identificador descriptivo (ej: `Tomógrafo Cotahuma CT03`).
+    *   **Marca/Fabricante:** Selección de la marca correspondiente (GE, Siemens, Philips, etc.). El sistema activará los filtros específicos de logs para cada una.
+    *   **Dirección IP o Host SSH:** Dirección de red del equipo con puerto SSH (ej: `192.168.80.10:22`).
+    *   **Usuario SSH y Contraseña:** Credenciales del sistema operativo del tomógrafo (ej: `centos` / `12345`).
+    *   **Directorio de Logs:** Directorio donde residen los archivos (ej: `/usr/g/service/log` para GE, `/var/log/siemens` para Siemens).
+    *   **Modo SSH:** `Legacy` para cifrados antiguos (común en tomógrafos antiguos) o `Modern`.
+    *   **Habilitar Monitoreo Activo:** Mantenga esta casilla marcada para habilitar el sondeo SSH automático.
+5. Haga clic en **Guardar Equipo** (esto actualizará el listado local).
+6. **[CRÍTICO]** Haga clic en el botón principal **Guardar Ajustes** al final de la sección Ajustes para persistir de manera definitiva los cambios en la base de datos PostgreSQL.
+
+---
+
+## 9. Gestión de Servicios y Control de Red
+
+Al trasladar la laptop de un Sitio 1 (ej: Cotahuma) a un Sitio 2 (ej: Nube o Clínica Privada), siga estas directrices para asegurar un funcionamiento óptimo.
+
+### 🔌 Desactivar y Activar Servicios
+Para evitar que el colector intente conectarse de forma persistente y genere bloqueos de sockets o consumo innecesario de batería al desplazarse, puede desactivar el sistema temporalmente:
+
+A través del terminal en el directorio raíz del proyecto (`MITF`), ejecute el script `./manage.sh`:
+
+*   **Detener los servicios (Sitio Anterior):**
+    ```bash
+    ./manage.sh stop
+    ```
+    *Esto apagará los contenedores de la aplicación y la base de datos de manera segura.*
+
+*   **Configuración Física de Red (Nueva Ubicación):**
+    Asegúrese de configurar la tarjeta de red LAN (Ethernet) de su laptop con una IP estática en el mismo segmento del tomógrafo de destino.
+    *   *Ejemplo para Cotahuma CT03 (IP tomógrafo: 192.168.80.10):* configure su laptop con la IP estática `192.168.80.80` y máscara `255.255.255.0`.
+
+*   **Verificar Conectividad de Red:**
+    Antes de arrancar los servicios, puede probar si los tomógrafos responden ping:
+    ```bash
+    ./manage.sh status
+    ```
+    *Este comando le indicará inmediatamente si los equipos en las direcciones IP `192.168.80.80` (aurct) y `192.168.80.10` (CT03) están respondiendo.*
+
+*   **Iniciar los servicios (Nuevo Sitio):**
+    Una vez asegurada la conexión física y la respuesta del ping, inicie el monitor:
+    ```bash
+    ./manage.sh start
+    ```
+    *Los servicios arrancarán en segundo plano y el motor de sondeo SSH intentará establecer comunicación en línea.*
+
+*   **Supervisión en Tiempo Real:**
+    Si tiene dudas sobre algún problema de autenticación o cifrado de SSH al conectarse, puede visualizar los logs de conexión en caliente:
+    ```bash
+    ./manage.sh logs
+    ```
+

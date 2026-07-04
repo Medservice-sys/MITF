@@ -4152,7 +4152,12 @@ async function loadFTPData() {
         }
 
         // Get files
-        const filesRes = await fetch('/api/ftp/files');
+        const restrictId = sessionStorage.getItem('user-device-id');
+        let filesUrl = '/api/ftp/files';
+        if (restrictId) {
+            filesUrl += `?deviceId=${encodeURIComponent(restrictId)}`;
+        }
+        const filesRes = await fetch(filesUrl);
         if (filesRes.ok) {
             const files = await filesRes.json() || [];
             

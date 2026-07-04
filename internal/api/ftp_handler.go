@@ -63,6 +63,8 @@ func HandleFTPStatus(w http.ResponseWriter, r *http.Request) {
 func HandleFTPFiles(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	deviceId := r.URL.Query().Get("deviceId")
+
 	ftpDir := "data/ftp_logs"
 	_ = os.MkdirAll(ftpDir, 0755)
 
@@ -71,6 +73,11 @@ func HandleFTPFiles(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	DeviceProfilesMu.RLock()
+	profilesCopy := make([]models.DeviceProfile, len(DeviceProfiles))
+	copy(profilesCopy, DeviceProfiles)
+	DeviceProfilesMu.RUnlock()
 
 	var ftpFiles []FTPFile
 	for _, f := range files {
@@ -81,6 +88,37 @@ func HandleFTPFiles(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue
 		}
+
+		// Apply deviceId filter if present
+		if deviceId != "" {
+			var devFound bool
+			var matchedDev models.DeviceProfile
+			for _, dev := range profilesCopy {
+				if dev.ID == deviceId {
+					matchedDev = dev
+					devFound = true
+					break
+				}
+			}
+			if devFound {
+				fileNameLower := strings.ToLower(f.Name())
+				devIDLower := strings.ToLower(matchedDev.ID)
+				devNameLower := strings.ToLower(matchedDev.Name)
+				devNameClean := strings.ReplaceAll(devNameLower, " ", "_")
+				devNameCleanHyphen := strings.ReplaceAll(devNameLower, " ", "-")
+				cleanID := strings.TrimPrefix(devIDLower, "ne-")
+
+				// Match if the filename contains the device ID, name, or clean sub-parts
+				if !strings.Contains(fileNameLower, devIDLower) &&
+					!strings.Contains(fileNameLower, cleanID) &&
+					!strings.Contains(fileNameLower, devNameLower) &&
+					!strings.Contains(fileNameLower, devNameClean) &&
+					!strings.Contains(fileNameLower, devNameCleanHyphen) {
+					continue
+				}
+			}
+		}
+
 		ftpFiles = append(ftpFiles, FTPFile{
 			Name:     f.Name(),
 			Size:     info.Size(),

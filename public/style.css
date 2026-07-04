@@ -113,7 +113,7 @@ body {
     width: 280px;
     display: flex;
     flex-direction: column;
-    padding: 18px;
+    padding: 18dpx;
     flex-shrink: 0;
 }
 
