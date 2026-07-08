@@ -4526,3 +4526,33 @@ function initFullSeverityFilters() {
     }
 }
 
+// Mobile Sidebar Toggle Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const btnMobileMenu = document.getElementById('btn-mobile-menu');
+    const sidebar = document.getElementById('main-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    
+    if (btnMobileMenu && sidebar && backdrop) {
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('active');
+        }
+        
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('active');
+        }
+
+        btnMobileMenu.addEventListener('click', toggleSidebar);
+        backdrop.addEventListener('click', closeSidebar);
+        
+        // Close sidebar when clicking a nav item on mobile
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    closeSidebar();
+                }
+            });
+        });
+    }
+});

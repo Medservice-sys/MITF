@@ -1413,3 +1413,170 @@ input:checked+.slider:before {
         grid-template-columns: 1fr;
     }
 }
+
+/* Mobile Responsive Adjustments (Screens from 320px/5-inch upwards) */
+@media (max-width: 992px) {
+    .kpi-grid,
+    .health-grid,
+    .hardware-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .charts-layout,
+    .dicom-grid,
+    .bitacora-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filters-panel {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .app-layout {
+        flex-direction: column;
+        padding: 8px;
+        gap: 8px;
+    }
+
+    .mobile-topbar {
+        display: flex !important;
+    }
+
+    .sidebar-backdrop.active {
+        display: block !important;
+        opacity: 1 !important;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -320px; /* Hide off-canvas */
+        width: 280px;
+        height: 100vh;
+        z-index: 1100;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: stretch;
+        padding: 16px;
+        border-radius: 0;
+        margin-bottom: 0;
+        transition: left 0.3s ease-in-out;
+    }
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    .sidebar .logo-area {
+        display: flex; /* Keep it visible inside sidebar if they want, or hide if topbar is enough */
+        margin-bottom: 32px;
+    }
+    
+    .role-selector-container {
+        display: flex !important;
+    }
+
+    .nav-menu {
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        overflow-x: hidden;
+        width: 100%;
+        gap: 6px;
+        margin-top: 0;
+    }
+
+    .nav-category {
+        display: block;
+    }
+
+    .nav-item {
+        white-space: normal;
+        padding: 10px 14px;
+        font-size: 0.92rem;
+    }
+
+    .sidebar-footer {
+        display: block;
+    }
+
+    .glass-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .header-controls {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+    
+    .kpi-grid,
+    .health-grid,
+    .hardware-grid,
+    .filters-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .mode-banner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .table-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Adjustments for ~5 inch phones (320px-360px wide) */
+    .app-layout {
+        padding: 6px;
+        gap: 6px;
+    }
+    
+    .logo-area h2 {
+        font-size: 1.1rem;
+    }
+    
+    .header-title h1 {
+        font-size: 1.2rem;
+    }
+    
+    .health-value-wrapper h2 {
+        font-size: 1.5rem;
+    }
+    
+    .kpi-card h3 {
+        font-size: 1.2rem;
+    }
+    
+    .nav-item {
+        font-size: 0.8rem;
+        padding: 6px 10px;
+    }
+    
+    .glass-header {
+        padding: 12px;
+    }
+    
+    .schematic-box {
+        padding: 12px;
+    }
+}

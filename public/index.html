@@ -24,8 +24,23 @@
     <div class="blob blob-accent"></div>
 
     <div class="app-layout">
+        <!-- Mobile Top Bar (Visible only on mobile) -->
+        <div class="mobile-topbar glass-panel" style="display: none; justify-content: space-between; align-items: center; padding: 12px 16px; margin-bottom: 8px;">
+            <button id="btn-mobile-menu" class="icon-btn glass-btn">
+                <i data-lucide="menu"></i>
+            </button>
+            <div class="logo-area" style="margin-bottom: 0;">
+                <i data-lucide="activity" class="icon-primary"></i>
+                <h2 style="font-size: 1.1rem; margin: 0;">MITF-TOM</h2>
+            </div>
+            <div style="width: 36px;"></div>
+        </div>
+        
+        <!-- Sidebar Backdrop -->
+        <div id="sidebar-backdrop" class="sidebar-backdrop" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1050; opacity: 0; transition: opacity var(--transition-speed);"></div>
+
         <!-- Sidebar Navigation -->
-        <aside class="sidebar glass-panel">
+        <aside class="sidebar glass-panel" id="main-sidebar">
             <div class="logo-area">
                 <i data-lucide="activity" class="icon-primary"></i>
                 <h2>MITF-TOM</h2>
@@ -124,7 +139,8 @@
                     style="display: flex; flex-direction: column; gap: 4px; color: var(--text-dim); font-size: 0.72rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
                     <div style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                         <strong>Tomógrafo:</strong> <span id="sidebar-device-model"
-                            style="color: var(--accent);">Auto-detectando...</span></div>
+                            style="color: var(--accent);">Auto-detectando...</span>
+                    </div>
                     <div style="display: flex; justify-content: space-between; gap: 8px;">
                         <span style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">SW: <span
                                 id="sidebar-device-sw">-</span></span>
@@ -463,17 +479,25 @@
                     <div class="table-header" style="flex-wrap: wrap; gap: 12px;">
                         <h3>Logs Recientes</h3>
                         <div class="mini-severity-filters" style="display: flex; gap: 6px; align-items: center;">
-                            <span style="font-size: 0.75rem; color: var(--text-dim); margin-right: 4px; font-weight: 500;">Severidad:</span>
-                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter active" data-severity="" style="padding: 2px 8px; font-size: 0.7rem;">
+                            <span
+                                style="font-size: 0.75rem; color: var(--text-dim); margin-right: 4px; font-weight: 500;">Severidad:</span>
+                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter active"
+                                data-severity="" style="padding: 2px 8px; font-size: 0.7rem;">
                                 Todos
                             </button>
-                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter" data-severity="SEVERE_ERROR" style="padding: 2px 8px; font-size: 0.7rem; border-left: 2px solid var(--critical);">
+                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter"
+                                data-severity="SEVERE_ERROR"
+                                style="padding: 2px 8px; font-size: 0.7rem; border-left: 2px solid var(--critical);">
                                 Crítico
                             </button>
-                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter" data-severity="WARNING" style="padding: 2px 8px; font-size: 0.7rem; border-left: 2px solid var(--warning);">
+                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter"
+                                data-severity="WARNING"
+                                style="padding: 2px 8px; font-size: 0.7rem; border-left: 2px solid var(--warning);">
                                 Warning
                             </button>
-                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter" data-severity="INFORMATIONAL" style="padding: 2px 8px; font-size: 0.7rem; border-left: 2px solid var(--info);">
+                            <button class="btn btn-secondary glass-btn btn-sm mini-severity-filter"
+                                data-severity="INFORMATIONAL"
+                                style="padding: 2px 8px; font-size: 0.7rem; border-left: 2px solid var(--info);">
                                 Info
                             </button>
                         </div>
@@ -554,18 +578,27 @@
 
                 <div class="table-box glass-panel margin-top">
                     <!-- Quick Severity Filter Pills -->
-                    <div class="quick-severity-filters" style="display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); align-items: center; flex-wrap: wrap;">
-                        <span style="font-size: 0.8rem; color: var(--text-dim); margin-right: 8px; font-weight: 500;">Filtrar Rápido:</span>
-                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter active" data-severity="" style="padding: 4px 10px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
+                    <div class="quick-severity-filters"
+                        style="display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); align-items: center; flex-wrap: wrap;">
+                        <span
+                            style="font-size: 0.8rem; color: var(--text-dim); margin-right: 8px; font-weight: 500;">Filtrar
+                            Rápido:</span>
+                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter active" data-severity=""
+                            style="padding: 4px 10px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
                             Todas
                         </button>
-                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter" data-severity="SEVERE_ERROR" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--critical); display: inline-flex; align-items: center; gap: 4px;">
+                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter"
+                            data-severity="SEVERE_ERROR"
+                            style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--critical); display: inline-flex; align-items: center; gap: 4px;">
                             Crítico (SEVERE)
                         </button>
-                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter" data-severity="WARNING" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--warning); display: inline-flex; align-items: center; gap: 4px;">
+                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter" data-severity="WARNING"
+                            style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--warning); display: inline-flex; align-items: center; gap: 4px;">
                             Warning (WARNING)
                         </button>
-                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter" data-severity="INFORMATIONAL" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--info); display: inline-flex; align-items: center; gap: 4px;">
+                        <button class="btn btn-secondary glass-btn btn-sm severity-pill-filter"
+                            data-severity="INFORMATIONAL"
+                            style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--info); display: inline-flex; align-items: center; gap: 4px;">
                             Info (INFO)
                         </button>
                     </div>
@@ -1265,7 +1298,7 @@
                             <h3>2. Ingeniero: Tickets Asignados & Histórico</h3>
                         </div>
                         <div class="maint-timeline" id="tickets-timeline-container"
-                            style="flex: 1; overflow-y: auto; padding-right: 10px;">
+                            style="fl   ex: 1; overflow-y: auto; padding-right: 10px;">
                             <!-- Cargado dinámicamente desde el backend -->
                             <p style="text-align: center; color: var(--text-dim); margin-top: 20px;">Cargando tickets...
                             </p>
@@ -1274,7 +1307,7 @@
 
                     <!-- 3 & 4. Engineer: Resolution Panel -->
                     <div class="glass-panel hidden" id="ticket-resolution-panel"
-                        style="grid-column: 1 / -1; border-top: 3px solid var(--primary);">
+                        style="padding:10px; grid-column: 1 / -1; border-top: 3px solid var(--primary);">
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                             <h3 id="resolution-panel-title">3. En Sitio: Resolución y Bitácora</h3>
@@ -1543,39 +1576,61 @@
                 </header>
 
                 <div class="admin-card glass-panel" style="margin-top: 24px; padding: 24px;">
-                    <div class="table-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div class="table-header"
+                        style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                         <div>
                             <h3 style="margin-bottom: 4px;">Registro de Reglas de Reconocimiento Activas</h3>
                             <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0;">
-                                Estas alarmas han sido reconocidas. Puede modificar su severidad final o crear un ticket de falla de forma directa.
+                                Estas alarmas han sido reconocidas. Puede modificar su severidad final o crear un ticket
+                                de falla de forma directa.
                             </p>
                         </div>
                         <div class="search-box" style="position: relative;">
-                            <input type="text" id="ack-search" placeholder="Buscar alarma..." class="glass-input" style="padding-left: 32px; width: 220px;">
-                            <i data-lucide="search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-dim);"></i>
+                            <input type="text" id="ack-search" placeholder="Buscar alarma..." class="glass-input"
+                                style="padding-left: 32px; width: 220px;">
+                            <i data-lucide="search"
+                                style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-dim);"></i>
                         </div>
                     </div>
 
                     <!-- Quick Severity Filter Bar for ACKs -->
-                    <div class="ack-severity-filters" style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
-                        <span style="font-size: 0.8rem; color: var(--text-dim); margin-right: 8px; font-weight: 500;">Filtrar Rápido (Severidad):</span>
-                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn active" data-severity="ALL" style="padding: 4px 10px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
+                    <div class="ack-severity-filters"
+                        style="display: flex; gap: 8px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
+                        <span
+                            style="font-size: 0.8rem; color: var(--text-dim); margin-right: 8px; font-weight: 500;">Filtrar
+                            Rápido (Severidad):</span>
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn active" data-severity="ALL"
+                            style="padding: 4px 10px; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
                             Todas
                         </button>
-                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="CRITICAL" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--critical); display: inline-flex; align-items: center; gap: 4px;">
-                            <span class="dot dot-red" style="width: 8px; height: 8px; background-color: var(--critical);"></span> Crítico (CRITICAL)
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="CRITICAL"
+                            style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--critical); display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="dot dot-red"
+                                style="width: 8px; height: 8px; background-color: var(--critical);"></span> Crítico
+                            (CRITICAL)
                         </button>
-                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="WARNING" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--warning); display: inline-flex; align-items: center; gap: 4px;">
-                            <span class="dot dot-yellow" style="width: 8px; height: 8px; background-color: var(--warning);"></span> Warning (WARNING)
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="WARNING"
+                            style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--warning); display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="dot dot-yellow"
+                                style="width: 8px; height: 8px; background-color: var(--warning);"></span> Warning
+                            (WARNING)
                         </button>
-                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="INFO" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--info); display: inline-flex; align-items: center; gap: 4px;">
-                            <span class="dot dot-blue" style="width: 8px; height: 8px; background-color: var(--info);"></span> Info (INFO)
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="INFO"
+                            style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--info); display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="dot dot-blue"
+                                style="width: 8px; height: 8px; background-color: var(--info);"></span> Info (INFO)
                         </button>
-                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="IGNORE" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--text-dim); display: inline-flex; align-items: center; gap: 4px;">
-                            <span class="dot dot-gray" style="width: 8px; height: 8px; background-color: var(--text-dim);"></span> Excluida (IGNORE)
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="IGNORE"
+                            style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--text-dim); display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="dot dot-gray"
+                                style="width: 8px; height: 8px; background-color: var(--text-dim);"></span> Excluida
+                            (IGNORE)
                         </button>
-                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="INFORMATIONAL" style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--primary); display: inline-flex; align-items: center; gap: 4px;">
-                            <span class="dot dot-green" style="width: 8px; height: 8px; background-color: var(--primary);"></span> Reconocida (INFORMATIONAL)
+                        <button class="btn btn-secondary glass-btn btn-sm ack-filter-btn" data-severity="INFORMATIONAL"
+                            style="padding: 4px 10px; font-size: 0.75rem; border-left: 3px solid var(--primary); display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="dot dot-green"
+                                style="width: 8px; height: 8px; background-color: var(--primary);"></span> Reconocida
+                            (INFORMATIONAL)
                         </button>
                     </div>
 
@@ -1592,7 +1647,8 @@
                             </thead>
                             <tbody id="ack-tbody">
                                 <tr>
-                                    <td colspan="5" class="text-center" style="padding: 20px; color: var(--text-dim);">No hay alarmas reconocidas actualmente.</td>
+                                    <td colspan="5" class="text-center" style="padding: 20px; color: var(--text-dim);">
+                                        No hay alarmas reconocidas actualmente.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1918,75 +1974,100 @@
                 <div class="settings-grid-wrapper">
                     <div class="settings-grid">
                         <!-- LEFT CARD: FTP SERVER CONFIGURATION & STATUS -->
-                        <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
-                            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                        <div class="glass-panel"
+                            style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+                            <h3
+                                style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
                                 <i data-lucide="server" style="color: var(--primary); width: 20px; height: 20px;"></i>
                                 Servidor FTP Embebido
                             </h3>
-                            <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4;">
+                            <p class="subtitle"
+                                style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4;">
                                 El tomógrafo puede enviar archivos de logs de manera pasiva usando estas credenciales.
                             </p>
 
                             <form id="ftp-config-form" style="display: flex; flex-direction: column; gap: 12px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
                                     <span style="color: var(--text-dim);">Estado:</span>
-                                    <span id="ftp-status-badge" class="pill pill-success" style="font-weight: 600;">ACTIVO</span>
+                                    <span id="ftp-status-badge" class="pill pill-success"
+                                        style="font-weight: 600;">ACTIVO</span>
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.8rem; color: var(--text-dim);">Puerto FTP</label>
-                                    <input type="number" id="ftp-port-input" class="glass-input" value="2121" min="1024" max="65535" required style="width: 100%;">
+                                    <input type="number" id="ftp-port-input" class="glass-input" value="2121" min="1024"
+                                        max="65535" required style="width: 100%;">
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.8rem; color: var(--text-dim);">Usuario FTP</label>
-                                    <input type="text" id="ftp-user-input" class="glass-input" value="admin" required style="width: 100%;">
+                                    <input type="text" id="ftp-user-input" class="glass-input" value="admin" required
+                                        style="width: 100%;">
                                 </div>
                                 <div class="form-group" style="display: flex; flex-direction: column; gap: 4px;">
                                     <label style="font-size: 0.8rem; color: var(--text-dim);">Contraseña FTP</label>
-                                    <input type="password" id="ftp-pass-input" class="glass-input" value="admin" required style="width: 100%;">
+                                    <input type="password" id="ftp-pass-input" class="glass-input" value="admin"
+                                        required style="width: 100%;">
                                 </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
                                     <span style="color: var(--text-dim);">Ruta de Ingesta:</span>
-                                    <span style="color: var(--accent); font-size: 0.8rem; font-family: monospace;">data/ftp_logs/</span>
+                                    <span
+                                        style="color: var(--accent); font-size: 0.8rem; font-family: monospace;">data/ftp_logs/</span>
                                 </div>
 
-                                <button type="submit" class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 16px; margin-top: 8px;">
-                                    <i data-lucide="save" style="width: 16px; height: 16px;"></i> Guardar Configuración FTP
+                                <button type="submit" class="btn btn-secondary"
+                                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 16px; margin-top: 8px;">
+                                    <i data-lucide="save" style="width: 16px; height: 16px;"></i> Guardar Configuración
+                                    FTP
                                 </button>
                             </form>
 
-                            <button id="btn-process-ftp" class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; padding: 10px 16px;">
+                            <button id="btn-process-ftp" class="btn btn-primary"
+                                style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; padding: 10px 16px;">
                                 <i data-lucide="play" style="width: 16px; height: 16px;"></i> Procesar Logs Ahora
                             </button>
                         </div>
 
                         <!-- RIGHT CARD: PENDING FILES IN QUEUE -->
-                        <div class="glass-panel" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; min-height: 380px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
+                        <div class="glass-panel"
+                            style="padding: 24px; display: flex; flex-direction: column; gap: 16px; min-height: 380px;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
                                 <div>
-                                    <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin: 0;">
-                                        <i data-lucide="folder-open" style="color: var(--secondary); width: 20px; height: 20px;"></i>
+                                    <h3
+                                        style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin: 0;">
+                                        <i data-lucide="folder-open"
+                                            style="color: var(--secondary); width: 20px; height: 20px;"></i>
                                         Cola de Archivos Pendientes
                                     </h3>
-                                    <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-top: 2px;">
+                                    <p class="subtitle"
+                                        style="font-size: 0.8rem; color: var(--text-dim); margin-top: 2px;">
                                         Archivos transferidos por el tomógrafo que están en espera de procesamiento
                                     </p>
                                 </div>
-                                <span id="ftp-pending-count" class="pill pill-info" style="font-size: 0.75rem; padding: 2px 8px;">0 archivos</span>
+                                <span id="ftp-pending-count" class="pill pill-info"
+                                    style="font-size: 0.75rem; padding: 2px 8px;">0 archivos</span>
                             </div>
 
                             <div class="table-responsive" style="overflow-x: auto; width: 100%; margin-top: 8px;">
-                                <table class="glass-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                <table class="glass-table"
+                                    style="width: 100%; border-collapse: collapse; text-align: left;">
                                     <thead>
                                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                                            <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Nombre de Archivo</th>
-                                            <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Tamaño</th>
-                                            <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">Última Modificación</th>
+                                            <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                Nombre de Archivo</th>
+                                            <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                Tamaño</th>
+                                            <th style="padding: 10px 12px; font-size: 0.85rem; color: var(--text-dim);">
+                                                Última Modificación</th>
                                         </tr>
                                     </thead>
                                     <tbody id="ftp-files-list">
                                         <!-- Dynamic FTP files -->
                                         <tr>
-                                            <td colspan="3" class="text-center" style="padding: 20px; color: var(--text-dim);">No hay archivos pendientes en la cola</td>
+                                            <td colspan="3" class="text-center"
+                                                style="padding: 20px; color: var(--text-dim);">No hay archivos
+                                                pendientes en la cola</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -2391,7 +2472,8 @@
                         </div>
                         <div class="form-group">
                             <label
-                                style="display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-dim);">Dispositivo Asignado (Restricción)</label>
+                                style="display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-dim);">Dispositivo
+                                Asignado (Restricción)</label>
                             <select id="user-device-input" class="glass-input" style="width: 100%; cursor: pointer;">
                                 <option value="">Todos los Dispositivos (Sin restricción)</option>
                             </select>
