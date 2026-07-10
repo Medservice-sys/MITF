@@ -48,6 +48,21 @@ type GlobalMetrics struct {
 	ActiveTubeEolMasMin float64        `json:"activeTubeEolMasMin,omitempty"`
 	ActiveTubeEolMasMax float64        `json:"activeTubeEolMasMax,omitempty"`
 	TubeWearPercent     float64        `json:"tubeWearPercent,omitempty"`
+	RoiDetails          *RoiDetails    `json:"roiDetails,omitempty"`
+}
+
+type RoiDetails struct {
+	TotalAvoided      float64          `json:"totalAvoided"`
+	TotalIntervention float64          `json:"totalIntervention"`
+	ResolvedTickets   []ResolvedTicket `json:"resolvedTickets"`
+}
+
+type ResolvedTicket struct {
+	ID               string  `json:"id"`
+	Title            string  `json:"title"`
+	Severity         string  `json:"severity"`
+	AvoidedCost      float64 `json:"avoidedCost"`
+	InterventionCost float64 `json:"interventionCost"`
 }
 
 // CollectorStatus represents the current state of the SSH log collector.

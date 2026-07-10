@@ -38,7 +38,7 @@ var Store = &SafeStore{
 var (
 	OperationMode          = "online" // "online" or "service"
 	OperationModeMu        sync.RWMutex
-	CustomClassifications   = make(map[string]string)
+	CustomClassifications   = make(map[string]map[string]string)
 	CustomClassificationsMu sync.RWMutex
 	DeviceProfiles          = make([]models.DeviceProfile, 0)
 	DeviceProfilesMu        sync.RWMutex
@@ -109,11 +109,31 @@ func loadClassificationsOnStartup() {
 	file, err := os.ReadFile("data/alarm_classifications.json")
 	if err != nil {
 		// Populate some defaults
-		CustomClassifications = map[string]string{
-			"MITF.TUBE.TEMP_INDEX":             "WARNING",
-			"MITF.COLLIMATOR.POSITION_ABORT":   "CRITICAL",
-			"Svc_Notepad":                      "IGNORE", // Ignore notepad service logs
-			"MITF.COOLING.FLUID_FLOW_ABORT":    "CRITICAL",
+		CustomClassifications = map[string]map[string]string{
+			"GE LightSpeed CT (Legacy)": {
+				"MITF.TUBE.TEMP_INDEX":           "WARNING",
+				"MITF.COLLIMATOR.POSITION_ABORT": "CRITICAL",
+				"Svc_Notepad":                    "IGNORE",
+				"MITF.COOLING.FLUID_FLOW_ABORT":  "CRITICAL",
+			},
+			"GE Optima CT520": {
+				"MITF.TUBE.TEMP_INDEX":           "WARNING",
+				"MITF.COLLIMATOR.POSITION_ABORT": "CRITICAL",
+				"Svc_Notepad":                    "IGNORE",
+				"MITF.COOLING.FLUID_FLOW_ABORT":  "CRITICAL",
+			},
+			"Siemens Somatom": {
+				"MITF.TUBE.TEMP_INDEX":           "WARNING",
+				"MITF.COLLIMATOR.POSITION_ABORT": "CRITICAL",
+				"Svc_Notepad":                    "IGNORE",
+				"MITF.COOLING.FLUID_FLOW_ABORT":  "CRITICAL",
+			},
+			"Philips Brilliance 64": {
+				"MITF.TUBE.TEMP_INDEX":           "WARNING",
+				"MITF.COLLIMATOR.POSITION_ABORT": "CRITICAL",
+				"Svc_Notepad":                    "IGNORE",
+				"MITF.COOLING.FLUID_FLOW_ABORT":  "CRITICAL",
+			},
 		}
 		saveClassifications()
 		return
@@ -207,16 +227,35 @@ func getProcessedEvents() []models.UnifiedLogEvent {
 
 	var result []models.UnifiedLogEvent
 	for _, ev := range events {
-		// Match against TCECode or Process
+		modelKey := "GE LightSpeed CT (Legacy)"
+		if Store.Status.Model != "" {
+			modelKey = Store.Status.Model
+		}
+		if ev.Host == "Siemens-MRI-Serv" {
+			modelKey = "Siemens Somatom"
+		} else if ev.Host == "Philips-Achieva" {
+			modelKey = "Philips Brilliance 64"
+		}
+
 		var override string
-		if ev.TCECode != "" {
-			if o, ok := CustomClassifications[ev.TCECode]; ok {
-				override = o
+		var matchedClassifications map[string]string
+		for k, classMap := range CustomClassifications {
+			if strings.EqualFold(k, modelKey) || strings.Contains(strings.ToLower(modelKey), strings.ToLower(k)) || strings.Contains(strings.ToLower(k), strings.ToLower(modelKey)) {
+				matchedClassifications = classMap
+				break
 			}
 		}
-		if override == "" && ev.Process != "" {
-			if o, ok := CustomClassifications[ev.Process]; ok {
-				override = o
+
+		if matchedClassifications != nil {
+			if ev.TCECode != "" {
+				if o, ok := matchedClassifications[ev.TCECode]; ok {
+					override = o
+				}
+			}
+			if override == "" && ev.Process != "" {
+				if o, ok := matchedClassifications[ev.Process]; ok {
+					override = o
+				}
 			}
 		}
 

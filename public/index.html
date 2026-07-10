@@ -278,8 +278,11 @@
                             </div>
                         </div>
                     </div>
-                    <div class="health-card glass-panel" style="border-top: 3px solid var(--info);">
-                        <span class="health-label">ROI (Ahorro Estimado)</span>
+                    <div class="health-card glass-panel" style="border-top: 3px solid var(--info); cursor: pointer;" id="roi-card">
+                        <span class="health-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            ROI (Ahorro Estimado)
+                            <i data-lucide="info" style="width: 14px; height: 14px; opacity: 0.7;"></i>
+                        </span>
                         <div class="health-value-wrapper">
                             <h2 id="health-roi" style="color: var(--info);">$0.00</h2>
                         </div>
@@ -1749,6 +1752,15 @@
                         <div class="table-header">
                             <h3>Tabla de Reglas de Filtrado y Clasificación</h3>
                             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <label for="classification-model-select" style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500; white-space: nowrap;">Modelo:</label>
+                                    <select id="classification-model-select" class="glass-input" style="background: var(--bg-card); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.1); padding: 6px 12px; border-radius: 8px; height: 38px;">
+                                        <option value="GE LightSpeed CT (Legacy)">GE LightSpeed CT (Legacy)</option>
+                                        <option value="GE Optima CT520">GE Optima CT520</option>
+                                        <option value="Siemens Somatom">Siemens Somatom</option>
+                                        <option value="Philips Brilliance 64">Philips Brilliance 64</option>
+                                    </select>
+                                </div>
                                 <div class="search-box">
                                     <i data-lucide="search"></i>
                                     <input type="text" id="classification-search" placeholder="Filtrar códigos..."
@@ -2494,6 +2506,66 @@
             </div>
         </div>
 
+        <!-- MODAL: DETALLES DE ROI -->
+        <div id="roi-modal" class="modal hidden">
+            <div class="modal-content glass-panel" style="max-width: 650px;">
+                <div class="modal-header">
+                    <h3>Detalles de ROI y Costo Evitado</h3>
+                    <button class="close-btn" id="close-roi-modal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding-top: 15px;">
+                    <p class="subtitle" style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 20px;">
+                        Cálculos basados en el histórico de tickets de mantenimiento preventivo y predictivo resueltos.
+                    </p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                        <div class="glass-panel" style="padding: 15px; border-left: 4px solid var(--success);">
+                            <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Costo Evitado Total</span>
+                            <h2 id="roi-modal-avoided" style="color: var(--success); margin-top: 5px;">$0.00</h2>
+                            <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 8px; line-height: 1.3;">
+                                Pérdidas financieras prevenidas al solucionar fallas de forma predictiva (Críticas: $15K, Advertencias: $4K).
+                            </p>
+                        </div>
+                        <div class="glass-panel" style="padding: 15px; border-left: 4px solid var(--critical);">
+                            <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Costo de Intervención</span>
+                            <h2 id="roi-modal-intervention" style="color: var(--critical); margin-top: 5px;">$0.00</h2>
+                            <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 8px; line-height: 1.3;">
+                                Gastos operativos incurridos en reparaciones, mano de obra ($200), repuestos ($800 c/u) y calibraciones ($400).
+                            </p>
+                        </div>
+                    </div>
+                    <div class="glass-panel" style="padding: 15px; margin-bottom: 20px;">
+                        <h4 style="margin-bottom: 12px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="check-square" style="width: 16px; height: 16px; color: var(--success);"></i> 
+                            Tickets Resueltos / Cerrados
+                        </h4>
+                        <div style="max-height: 200px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;" class="admin-table">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left;">
+                                        <th style="padding: 8px 12px;">ID</th>
+                                        <th style="padding: 8px 12px;">Título</th>
+                                        <th style="padding: 8px 12px;">Severidad</th>
+                                        <th style="padding: 8px 12px; text-align: right;">Costo Evitado</th>
+                                        <th style="padding: 8px 12px; text-align: right;">Intervención</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roi-tickets-tbody">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--text-dim);">Retorno Neto (ROI):</span>
+                            <h3 id="roi-modal-net" style="color: var(--info); font-size: 1.4rem;">$0.00</h3>
+                        </div>
+                        <button id="btn-close-roi-modal-footer" class="btn btn-secondary glass-btn">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- CONTEXT MENU FOR ALARMS (ATREC Integration) -->
         <div id="alarm-context-menu" class="glass-panel"
             style="display: none; position: absolute; z-index: 10000; min-width: 220px; padding: 6px 0; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); border-radius: 8px; backdrop-filter: blur(12px); background: rgba(15, 23, 42, 0.95);">
@@ -2562,6 +2634,8 @@
                 </form>
             </div>
         </div>
+
+        <div id="toast-container" style="position: fixed; bottom: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
 
         <script src="script.js"></script>
 </body>

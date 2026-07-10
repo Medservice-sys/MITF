@@ -545,11 +545,19 @@ func saveCustomCatalogLocked() {
 	_ = os.WriteFile("data/custom_catalog.json", data, 0644)
 }
 
-func GetMergedAlarms() []AlarmInfo {
+func GetMergedAlarms(model string) []AlarmInfo {
 	catalogOnce.Do(loadCustomCatalog)
 
 	CustomClassificationsMu.RLock()
 	defer CustomClassificationsMu.RUnlock()
+
+	var matchedClassifications map[string]string
+	for k, classMap := range CustomClassifications {
+		if strings.EqualFold(k, model) || strings.Contains(strings.ToLower(model), strings.ToLower(k)) || strings.Contains(strings.ToLower(k), strings.ToLower(model)) {
+			matchedClassifications = classMap
+			break
+		}
+	}
 
 	// Track seen codes
 	seen := make(map[string]bool)
@@ -562,9 +570,11 @@ func GetMergedAlarms() []AlarmInfo {
 
 		current := alarm.DefaultSeverity
 		status := "PENDING"
-		if val, ok := CustomClassifications[code]; ok {
-			current = val
-			status = "CONFIRMED"
+		if matchedClassifications != nil {
+			if val, ok := matchedClassifications[code]; ok {
+				current = val
+				status = "CONFIRMED"
+			}
 		}
 
 		list = append(list, AlarmInfo{
@@ -587,9 +597,11 @@ func GetMergedAlarms() []AlarmInfo {
 
 		current := alarm.DefaultSeverity
 		status := "PENDING"
-		if val, ok := CustomClassifications[code]; ok {
-			current = val
-			status = "CONFIRMED"
+		if matchedClassifications != nil {
+			if val, ok := matchedClassifications[code]; ok {
+				current = val
+				status = "CONFIRMED"
+			}
 		}
 
 		list = append(list, AlarmInfo{
@@ -633,9 +645,11 @@ func GetMergedAlarms() []AlarmInfo {
 
 			current := defSev
 			status := "PENDING"
-			if val, ok := CustomClassifications[code]; ok {
-				current = val
-				status = "CONFIRMED"
+			if matchedClassifications != nil {
+				if val, ok := matchedClassifications[code]; ok {
+					current = val
+					status = "CONFIRMED"
+				}
 			}
 
 			label := "Alarma Dinámica: " + code
@@ -665,14 +679,29 @@ func HandleAdminClassifications(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodGet {
+		model := r.URL.Query().Get("model")
+		if model == "" {
+			model = "GE LightSpeed CT (Legacy)"
+		}
+
 		CustomClassificationsMu.RLock()
 		overrides := make(map[string]string)
-		for k, v := range CustomClassifications {
-			overrides[k] = v
+		
+		var matchedClassifications map[string]string
+		for k, classMap := range CustomClassifications {
+			if strings.EqualFold(k, model) || strings.Contains(strings.ToLower(model), strings.ToLower(k)) || strings.Contains(strings.ToLower(k), strings.ToLower(model)) {
+				matchedClassifications = classMap
+				break
+			}
+		}
+		if matchedClassifications != nil {
+			for k, v := range matchedClassifications {
+				overrides[k] = v
+			}
 		}
 		CustomClassificationsMu.RUnlock()
 
-		alarms := GetMergedAlarms()
+		alarms := GetMergedAlarms(model)
 
 		resp := ClassificationsResponse{
 			Overrides: overrides,
@@ -684,6 +713,11 @@ func HandleAdminClassifications(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
+		model := r.URL.Query().Get("model")
+		if model == "" {
+			model = "GE LightSpeed CT (Legacy)"
+		}
+
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Failed to read body", http.StatusBadRequest)
@@ -702,11 +736,26 @@ func HandleAdminClassifications(w http.ResponseWriter, r *http.Request) {
 		}
 
 		CustomClassificationsMu.Lock()
+		// Ensure model key exists
+		var targetModelKey string
+		for k := range CustomClassifications {
+			if strings.EqualFold(k, model) {
+				targetModelKey = k
+				break
+			}
+		}
+		if targetModelKey == "" {
+			targetModelKey = model
+		}
+		if _, ok := CustomClassifications[targetModelKey]; !ok {
+			CustomClassifications[targetModelKey] = make(map[string]string)
+		}
+
 		if isSingleUpdate {
 			if singleUpdate.Severity == "DEFAULT" || singleUpdate.Severity == "" {
-				delete(CustomClassifications, singleUpdate.TCECode)
+				delete(CustomClassifications[targetModelKey], singleUpdate.TCECode)
 			} else {
-				CustomClassifications[singleUpdate.TCECode] = singleUpdate.Severity
+				CustomClassifications[targetModelKey][singleUpdate.TCECode] = singleUpdate.Severity
 			}
 		} else {
 			var newRules map[string]string
@@ -715,7 +764,7 @@ func HandleAdminClassifications(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Invalid body", http.StatusBadRequest)
 				return
 			}
-			CustomClassifications = newRules
+			CustomClassifications[targetModelKey] = newRules
 		}
 		saveClassifications()
 		CustomClassificationsMu.Unlock()

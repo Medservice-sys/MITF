@@ -1028,7 +1028,7 @@ select.glass-input {
 }
 
 .modal-content {
-    width: 600px;
+    width: auto;
     max-width: 90%;
     padding: 24px;
     animation: modalSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1416,18 +1416,19 @@ input:checked+.slider:before {
 
 /* Mobile Responsive Adjustments (Screens from 320px/5-inch upwards) */
 @media (max-width: 992px) {
+
     .kpi-grid,
     .health-grid,
     .hardware-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .charts-layout,
     .dicom-grid,
     .bitacora-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .filters-panel {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -1452,7 +1453,8 @@ input:checked+.slider:before {
     .sidebar {
         position: fixed;
         top: 0;
-        left: -320px; /* Hide off-canvas */
+        left: -320px;
+        /* Hide off-canvas */
         width: 280px;
         height: 100vh;
         z-index: 1100;
@@ -1470,10 +1472,11 @@ input:checked+.slider:before {
     }
 
     .sidebar .logo-area {
-        display: flex; /* Keep it visible inside sidebar if they want, or hide if topbar is enough */
+        display: flex;
+        /* Keep it visible inside sidebar if they want, or hide if topbar is enough */
         margin-bottom: 32px;
     }
-    
+
     .role-selector-container {
         display: flex !important;
     }
@@ -1514,7 +1517,7 @@ input:checked+.slider:before {
         flex-wrap: wrap;
         justify-content: flex-start;
     }
-    
+
     .kpi-grid,
     .health-grid,
     .hardware-grid,
@@ -1532,7 +1535,7 @@ input:checked+.slider:before {
         align-items: flex-start;
         gap: 10px;
     }
-    
+
     .table-wrapper {
         width: 100%;
         overflow-x: auto;
@@ -1545,37 +1548,38 @@ input:checked+.slider:before {
 }
 
 @media (max-width: 480px) {
+
     /* Adjustments for ~5 inch phones (320px-360px wide) */
     .app-layout {
         padding: 6px;
         gap: 6px;
     }
-    
+
     .logo-area h2 {
         font-size: 1.1rem;
     }
-    
+
     .header-title h1 {
         font-size: 1.2rem;
     }
-    
+
     .health-value-wrapper h2 {
         font-size: 1.5rem;
     }
-    
+
     .kpi-card h3 {
         font-size: 1.2rem;
     }
-    
+
     .nav-item {
         font-size: 0.8rem;
         padding: 6px 10px;
     }
-    
+
     .glass-header {
         padding: 12px;
     }
-    
+
     .schematic-box {
         padding: 12px;
     }

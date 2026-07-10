@@ -1,6 +1,73 @@
 // 1. Initializing Lucide Icons
 lucide.createIcons();
 
+// Toast notification helper
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+        alert(message);
+        return;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'glass-panel';
+    
+    let icon = 'check-circle';
+    let borderLeftColor = 'var(--success)';
+    if (type === 'error' || type === 'critical') {
+        icon = 'alert-triangle';
+        borderLeftColor = 'var(--critical)';
+    } else if (type === 'warning') {
+        icon = 'alert-circle';
+        borderLeftColor = 'var(--warning)';
+    } else if (type === 'info') {
+        icon = 'info';
+        borderLeftColor = 'var(--info)';
+    }
+
+    toast.style = `
+        min-width: 300px;
+        max-width: 420px;
+        padding: 14px 18px;
+        border-radius: 8px;
+        border-left: 4px solid ${borderLeftColor};
+        background: rgba(15, 23, 42, 0.95);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transform: translateY(50px);
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: auto;
+    `;
+
+    toast.innerHTML = `
+        <i data-lucide="${icon}" style="width: 20px; height: 20px; color: ${borderLeftColor}; flex-shrink: 0;"></i>
+        <div style="font-size: 0.85rem; color: var(--text-main); font-weight: 500; line-height: 1.4; flex-grow: 1;">${message}</div>
+        <button style="background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.1rem; padding: 0 4px;" onclick="this.parentElement.remove()">&times;</button>
+    `;
+
+    container.appendChild(toast);
+    lucide.createIcons();
+
+    // Animate in
+    setTimeout(() => {
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+    }, 50);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        toast.style.transform = 'translateY(-20px)';
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            toast.remove();
+        }, 400);
+    }, 5000);
+}
+
+
 // Helper to map severity level to CSS class
 function getSeverityPillClass(severity) {
     const sev = (severity || '').toUpperCase();
@@ -35,6 +102,7 @@ const itemsPerPage = 12;
 let refreshInterval = 30; // default 30s
 let timeLeft = refreshInterval;
 let autoRefreshTimer = null;
+let latestMetrics = null;
 
 // Cache for client-side sorting and filtering
 let cachedClassification = {
@@ -691,6 +759,7 @@ async function refreshDashboard() {
         const response = await fetch(`/api/metrics${queryParams}`);
         if (response.ok) {
             const metrics = await response.json();
+            latestMetrics = metrics;
             updateMetricsUI(metrics);
         }
     } catch (err) {
@@ -1660,10 +1729,83 @@ function closeHelpModal() {
     currentHelpCode = "";
 }
 
+function openRoiModal() {
+    const modalEl = document.getElementById('roi-modal');
+    if (!modalEl) return;
+
+    const avoidedEl = document.getElementById('roi-modal-avoided');
+    const interventionEl = document.getElementById('roi-modal-intervention');
+    const netEl = document.getElementById('roi-modal-net');
+    const tbodyEl = document.getElementById('roi-tickets-tbody');
+
+    if (latestMetrics && latestMetrics.roiDetails) {
+        const details = latestMetrics.roiDetails;
+        avoidedEl.innerText = `$${details.totalAvoided.toFixed(2)}`;
+        interventionEl.innerText = `$${details.totalIntervention.toFixed(2)}`;
+        netEl.innerText = `$${latestMetrics.roi.toFixed(2)}`;
+
+        tbodyEl.innerHTML = '';
+        if (details.resolvedTickets && details.resolvedTickets.length > 0) {
+            details.resolvedTickets.forEach(tk => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+                tr.innerHTML = `
+                    <td style="padding: 8px 12px; font-weight: 600; color: var(--info);">${tk.id}</td>
+                    <td style="padding: 8px 12px;">${tk.title}</td>
+                    <td style="padding: 8px 12px;"><span class="pill ${getSeverityPillClass(tk.severity)}">${tk.severity}</span></td>
+                    <td style="padding: 8px 12px; text-align: right; color: var(--success); font-weight: 500;">$${tk.avoidedCost.toFixed(2)}</td>
+                    <td style="padding: 8px 12px; text-align: right; color: var(--critical); font-weight: 500;">$${tk.interventionCost.toFixed(2)}</td>
+                `;
+                tbodyEl.appendChild(tr);
+            });
+        } else {
+            tbodyEl.innerHTML = `
+                <tr>
+                    <td colspan="5" style="padding: 20px; text-align: center; color: var(--text-dim);">
+                        No hay tickets resueltos o cerrados registrados.
+                    </td>
+                </tr>
+            `;
+        }
+    } else {
+        avoidedEl.innerText = '$0.00';
+        interventionEl.innerText = '$0.00';
+        netEl.innerText = '$0.00';
+        tbodyEl.innerHTML = `
+            <tr>
+                <td colspan="5" style="padding: 20px; text-align: center; color: var(--text-dim);">
+                    Cargando datos...
+                </td>
+            </tr>
+        `;
+    }
+
+    modalEl.classList.remove('hidden');
+    lucide.createIcons();
+}
+
+function closeRoiModal() {
+    const modalEl = document.getElementById('roi-modal');
+    if (modalEl) modalEl.classList.add('hidden');
+}
+
 // Bind modal buttons
 document.getElementById('close-help-modal').addEventListener('click', closeHelpModal);
 document.getElementById('cancel-help-modal').addEventListener('click', closeHelpModal);
 document.getElementById('save-help-modal').addEventListener('click', saveHelpExperience);
+
+const roiCard = document.getElementById('roi-card');
+if (roiCard) {
+    roiCard.addEventListener('click', openRoiModal);
+}
+const closeRoiBtn = document.getElementById('close-roi-modal');
+if (closeRoiBtn) {
+    closeRoiBtn.addEventListener('click', closeRoiModal);
+}
+const closeRoiBtnFooter = document.getElementById('btn-close-roi-modal-footer');
+if (closeRoiBtnFooter) {
+    closeRoiBtnFooter.addEventListener('click', closeRoiModal);
+}
 
 // Event delegation for help buttons
 document.body.addEventListener('click', (e) => {
@@ -2080,13 +2222,16 @@ if (ticketForm) {
             if (res.ok) {
                 ticketForm.reset();
                 loadMaintenanceRecords();
-                alert("Ticket abierto y asignado exitosamente al ingeniero de campo.");
+                if (typeof refreshDashboard === 'function') {
+                    refreshDashboard();
+                }
+                showToast("Ticket abierto y asignado exitosamente al ingeniero de campo.", "success");
             } else {
-                alert("Error al abrir el ticket en el servidor.");
+                showToast("Error al abrir el ticket en el servidor.", "error");
             }
         } catch (err) {
             console.error("Error creating ticket:", err);
-            alert("Error de conexión al guardar el ticket.");
+            showToast("Error de conexión al guardar el ticket.", "error");
         }
     });
 }
@@ -2145,7 +2290,7 @@ if (resolutionForm) {
         let alertMsg = "Bitácora guardada y ticket cerrado exitosamente.";
         if (resolutionType === 'remote') {
             if (remoteEvidence === "") {
-                alert("Por favor, ingrese una evidencia remota (ej. log de backup, comando ejecutado o confirmación del soporte remotos).");
+                showToast("Por favor, ingrese una evidencia remota (ej. log de backup, comando ejecutado o confirmación del soporte remotos).", "warning");
                 return;
             }
             if (remoteResolved === 'yes') {
@@ -2194,13 +2339,16 @@ if (resolutionForm) {
             if (res.ok) {
                 document.getElementById('ticket-resolution-panel').classList.add('hidden');
                 loadMaintenanceRecords();
-                alert(alertMsg);
+                if (typeof refreshDashboard === 'function') {
+                    refreshDashboard();
+                }
+                showToast(alertMsg, "success");
             } else {
-                alert("Error al actualizar el ticket en el servidor.");
+                showToast("Error al actualizar el ticket en el servidor.", "error");
             }
         } catch (err) {
             console.error("Error resolving ticket:", err);
-            alert("Error de conexión al guardar la resolución.");
+            showToast("Error de conexión al guardar la resolución.", "error");
         }
     });
 }
@@ -2223,8 +2371,11 @@ let loadedAlarms = [];
 async function loadAdminClassifications(force = false) {
     if (!force && adminClassificationsLoaded) return;
 
+    const modelSelect = document.getElementById('classification-model-select');
+    const selectedModel = modelSelect ? modelSelect.value : "GE LightSpeed CT (Legacy)";
+
     try {
-        const res = await fetch('/api/admin/classifications');
+        const res = await fetch(`/api/admin/classifications?model=${encodeURIComponent(selectedModel)}`);
         if (!res.ok) return;
         const data = await res.json();
         currentClassifications = data.overrides || {};
@@ -2364,8 +2515,10 @@ function renderClassificationsTable() {
 
 // Separate helper to save classifications
 async function saveClassificationsToServer(rules) {
+    const modelSelect = document.getElementById('classification-model-select');
+    const selectedModel = modelSelect ? modelSelect.value : "GE LightSpeed CT (Legacy)";
     try {
-        const res = await fetch('/api/admin/classifications', {
+        const res = await fetch(`/api/admin/classifications?model=${encodeURIComponent(selectedModel)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rules)
@@ -2387,6 +2540,10 @@ async function saveClassificationsToServer(rules) {
 
 // Add event listener for search box
 document.getElementById('classification-search')?.addEventListener('input', renderClassificationsTable);
+document.getElementById('classification-model-select')?.addEventListener('change', () => {
+    adminClassificationsLoaded = false;
+    loadAdminClassifications(true);
+});
 
 // Save classifications when clicking the save button
 document.getElementById('btn-save-classifications')?.addEventListener('click', async () => {
@@ -2401,8 +2558,11 @@ document.getElementById('btn-save-classifications')?.addEventListener('click', a
         }
     });
 
+    const modelSelect = document.getElementById('classification-model-select');
+    const selectedModel = modelSelect ? modelSelect.value : "GE LightSpeed CT (Legacy)";
+
     try {
-        const res = await fetch('/api/admin/classifications', {
+        const res = await fetch(`/api/admin/classifications?model=${encodeURIComponent(selectedModel)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rules)

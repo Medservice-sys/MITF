@@ -85,7 +85,8 @@ func HandleMetrics(w http.ResponseWriter, r *http.Request) {
 		filtered = append(filtered, ev)
 	}
 
-	dhi, thi, fhi, roi, critCount, warnCount, processMap := metrics.CalculateHealthIndices(filtered)
+	dhi, thi, fhi, _, critCount, warnCount, processMap := metrics.CalculateHealthIndices(filtered)
+	roi, roiDetails := calculateTicketROI()
 
 	activeTube := metrics.ResolveActiveTube(filtered)
 	cumulativeMAs := 7478990.0 // Baseline default count
@@ -136,6 +137,7 @@ func HandleMetrics(w http.ResponseWriter, r *http.Request) {
 		ActiveTubeEolMasMin: activeTube.EolMasMin,
 		ActiveTubeEolMasMax: activeTube.EolMasMax,
 		TubeWearPercent:     wearPercent,
+		RoiDetails:          roiDetails,
 	}
 
 	json.NewEncoder(w).Encode(metricsData)
@@ -327,7 +329,8 @@ func HandleHealth(w http.ResponseWriter, r *http.Request) {
 		filtered = append(filtered, ev)
 	}
 
-	dhi, thi, fhi, roi, _, _, _ := metrics.CalculateHealthIndices(filtered)
+	dhi, thi, fhi, _, _, _, _ := metrics.CalculateHealthIndices(filtered)
+	roi, _ := calculateTicketROI()
 
 	type HealthResponse struct {
 		DHI float64 `json:"dhi"`
@@ -351,7 +354,8 @@ func HandleFleet(w http.ResponseWriter, r *http.Request) {
 
 	events := getProcessedEvents()
 
-	dhi, thi, fhi, roi, crit, warn, _ := metrics.CalculateHealthIndices(events)
+	dhi, thi, fhi, _, crit, warn, _ := metrics.CalculateHealthIndices(events)
+	roi, _ := calculateTicketROI()
 
 	type FleetResponse struct {
 		FHI           float64 `json:"fhi"`
@@ -394,7 +398,8 @@ func HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	status := Store.Status
 	Store.mu.RUnlock()
 
-	dhi, thi, fhi, roi, crit, warn, processMap := metrics.CalculateHealthIndices(filtered)
+	dhi, thi, fhi, _, crit, warn, processMap := metrics.CalculateHealthIndices(filtered)
+	roi, _ := calculateTicketROI()
 
 	validCount := 0
 	for _, ev := range filtered {
@@ -661,4 +666,66 @@ func HandleClassification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(resp)
+}
+
+func calculateTicketROI() (float64, *models.RoiDetails) {
+	maintMu.RLock()
+	defer maintMu.RUnlock()
+
+	var totalAvoided float64
+	var totalIntervention float64
+	resolvedTickets := []models.ResolvedTicket{}
+
+	for _, tk := range ticketRecords {
+		statusLower := strings.ToLower(tk.Status)
+		if statusLower == "closed" || statusLower == "resuelto" || statusLower == "verificado" || statusLower == "cerrado" {
+			// Cost avoided by avoiding critical/warning failures
+			var cAvoided float64
+			severityLower := strings.ToLower(tk.Severity)
+			if severityLower == "critical" || severityLower == "critical_error" || severityLower == "severe_error" {
+				cAvoided = 15000.0
+			} else if severityLower == "warning" || severityLower == "warn_minor" || severityLower == "major_error" {
+				cAvoided = 4000.0
+			} else {
+				cAvoided = 1000.0
+			}
+
+			// Intervention Cost
+			cIntervention := 200.0 // Labor/base cost
+			if tk.RequiresCalibration {
+				cIntervention += 400.0
+			}
+			if tk.RequiresParts {
+				partCost := 800.0
+				if len(tk.PartsNeeded) > 0 {
+					partCost = float64(len(tk.PartsNeeded)) * 800.0
+				}
+				cIntervention += partCost
+			}
+
+			totalAvoided += cAvoided
+			totalIntervention += cIntervention
+
+			resolvedTickets = append(resolvedTickets, models.ResolvedTicket{
+				ID:               tk.ID,
+				Title:            tk.Title,
+				Severity:         tk.Severity,
+				AvoidedCost:      cAvoided,
+				InterventionCost: cIntervention,
+			})
+		}
+	}
+
+	roi := totalAvoided - totalIntervention
+	if roi < 0 {
+		roi = 0
+	}
+
+	details := &models.RoiDetails{
+		TotalAvoided:      totalAvoided,
+		TotalIntervention: totalIntervention,
+		ResolvedTickets:   resolvedTickets,
+	}
+
+	return roi, details
 }
