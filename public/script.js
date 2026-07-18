@@ -330,7 +330,7 @@ function updateMetricsUI(metrics) {
     document.getElementById('health-fhi').innerText = `${Math.round(metrics.fhi)}%`;
     document.getElementById('bar-fhi').style.width = `${metrics.fhi}%`;
 
-    document.getElementById('health-roi').innerText = `$${metrics.roi.toFixed(2)}`;
+    document.getElementById('health-roi').innerText = `Bs${metrics.roi.toFixed(2)}`;
 
     // Update Activity Chart (Events By Hour)
     if (activityChart && metrics.eventsByHour) {
@@ -1747,9 +1747,9 @@ function openRoiModal() {
 
     if (latestMetrics && latestMetrics.roiDetails) {
         const details = latestMetrics.roiDetails;
-        avoidedEl.innerText = `$${details.totalAvoided.toFixed(2)}`;
-        interventionEl.innerText = `$${details.totalIntervention.toFixed(2)}`;
-        netEl.innerText = `$${latestMetrics.roi.toFixed(2)}`;
+        avoidedEl.innerText = `Bs${details.totalAvoided.toFixed(2)}`;
+        interventionEl.innerText = `Bs${details.totalIntervention.toFixed(2)}`;
+        netEl.innerText = `Bs${latestMetrics.roi.toFixed(2)}`;
 
         tbodyEl.innerHTML = '';
         if (details.resolvedTickets && details.resolvedTickets.length > 0) {
@@ -1760,8 +1760,8 @@ function openRoiModal() {
                     <td style="padding: 8px 12px; font-weight: 600; color: var(--info);">${tk.id}</td>
                     <td style="padding: 8px 12px;">${tk.title}</td>
                     <td style="padding: 8px 12px;"><span class="pill ${getSeverityPillClass(tk.severity)}">${tk.severity}</span></td>
-                    <td style="padding: 8px 12px; text-align: right; color: var(--success); font-weight: 500;">$${tk.avoidedCost.toFixed(2)}</td>
-                    <td style="padding: 8px 12px; text-align: right; color: var(--critical); font-weight: 500;">$${tk.interventionCost.toFixed(2)}</td>
+                    <td style="padding: 8px 12px; text-align: right; color: var(--success); font-weight: 500;">Bs${tk.avoidedCost.toFixed(2)}</td>
+                    <td style="padding: 8px 12px; text-align: right; color: var(--critical); font-weight: 500;">Bs${tk.interventionCost.toFixed(2)}</td>
                 `;
                 tbodyEl.appendChild(tr);
             });
@@ -1959,6 +1959,8 @@ async function loadMaintenanceRecords() {
             `;
             container.appendChild(item);
         });
+        
+        renderSavedBitacorasTable();
     } catch (err) {
         console.error("Error loading tickets:", err);
     }
@@ -3087,6 +3089,31 @@ async function loadConfigMode() {
                 if (settingRefresh) settingRefresh.value = refreshInterval;
             }
 
+            if (cfg.roiCriticalAvoided !== undefined) {
+                const input = document.getElementById('setting-roi-critical');
+                if (input) input.value = cfg.roiCriticalAvoided;
+            }
+            if (cfg.roiWarningAvoided !== undefined) {
+                const input = document.getElementById('setting-roi-warning');
+                if (input) input.value = cfg.roiWarningAvoided;
+            }
+            if (cfg.roiMinorAvoided !== undefined) {
+                const input = document.getElementById('setting-roi-minor');
+                if (input) input.value = cfg.roiMinorAvoided;
+            }
+            if (cfg.roiLaborCost !== undefined) {
+                const input = document.getElementById('setting-roi-labor');
+                if (input) input.value = cfg.roiLaborCost;
+            }
+            if (cfg.roiCalibrationCost !== undefined) {
+                const input = document.getElementById('setting-roi-calibration');
+                if (input) input.value = cfg.roiCalibrationCost;
+            }
+            if (cfg.roiPartCost !== undefined) {
+                const input = document.getElementById('setting-roi-part');
+                if (input) input.value = cfg.roiPartCost;
+            }
+
             if (cfg.devices) {
                 configDevices = cfg.devices.map(d => ({
                     status: 'unknown',
@@ -3162,6 +3189,13 @@ if (settingsForm) {
         const refreshValInput = document.getElementById('setting-refresh');
         const refreshVal = refreshValInput ? parseInt(refreshValInput.value) : 15;
 
+        const roiCritical = parseFloat(document.getElementById('setting-roi-critical').value || 15000);
+        const roiWarning = parseFloat(document.getElementById('setting-roi-warning').value || 4000);
+        const roiMinor = parseFloat(document.getElementById('setting-roi-minor').value || 1000);
+        const roiLabor = parseFloat(document.getElementById('setting-roi-labor').value || 200);
+        const roiCalibration = parseFloat(document.getElementById('setting-roi-calibration').value || 400);
+        const roiPart = parseFloat(document.getElementById('setting-roi-part').value || 800);
+
         // Save mode
         try {
             const res = await fetch('/api/config', {
@@ -3170,6 +3204,12 @@ if (settingsForm) {
                 body: JSON.stringify({ 
                     operationMode: modeVal,
                     refreshInterval: refreshVal,
+                    roiCriticalAvoided: roiCritical,
+                    roiWarningAvoided: roiWarning,
+                    roiMinorAvoided: roiMinor,
+                    roiLaborCost: roiLabor,
+                    roiCalibrationCost: roiCalibration,
+                    roiPartCost: roiPart,
                     devices: configDevices.map(({ id, name, host, user, password, brand, remoteLogDir, sshMode, active }) => ({
                         id, name, host, user, password, brand, remoteLogDir, sshMode, active
                     }))
@@ -4769,5 +4809,52 @@ function populateDashDeviceFilter() {
         filter.disabled = false;
         filter.style.opacity = '1';
     }
+}
+
+function renderSavedBitacorasTable() {
+    const tbody = document.getElementById('saved-bitacoras-tbody');
+    const countEl = document.getElementById('saved-bitacoras-count');
+    if (!tbody) return;
+
+    // Filter closed/resolved tickets which represent the bitácoras guardadas
+    const closedTickets = allTickets.filter(t => t.status === 'closed' || t.status === 'Cerrado');
+
+    if (countEl) countEl.innerText = closedTickets.length;
+
+    tbody.innerHTML = '';
+    if (closedTickets.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 20px;">No hay bitácoras de mantenimiento guardadas.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    closedTickets.forEach(tk => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+        
+        let calibText = "No requerida";
+        if (tk.requiresCalibration) {
+            calibText = `Sí (${tk.calibrationStatus === 'approved' ? 'Aprobada' : 'No Aprobada'})`;
+        }
+
+        tr.innerHTML = `
+            <td style="padding: 10px 12px; font-weight: 600; color: var(--info);">${escapeHtml(tk.id)}</td>
+            <td style="padding: 10px 12px; font-size: 0.8rem; color: var(--text-dim);">${escapeHtml(tk.dateClosed || tk.dateOpened || '-')}</td>
+            <td style="padding: 10px 12px; font-weight: 500;">${escapeHtml(tk.title)}</td>
+            <td style="padding: 10px 12px; font-size: 0.8rem;">
+                <div><strong style="color: var(--accent);">${escapeHtml(tk.deviceId || 'General')}</strong></div>
+                <span style="color: var(--text-dim); font-size: 0.75rem;">Logs: ${escapeHtml(tk.relatedLogs || '-')}</span>
+            </td>
+            <td style="padding: 10px 12px; font-size: 0.8rem;">${escapeHtml(tk.engineer)}</td>
+            <td style="padding: 10px 12px; font-size: 0.8rem; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(tk.diagnosis || '-')}">
+                <strong>Diagnóstico:</strong> ${escapeHtml(tk.diagnosis || '-')}
+            </td>
+            <td style="padding: 10px 12px; font-size: 0.8rem;">${escapeHtml(calibText)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 

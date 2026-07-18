@@ -1120,18 +1120,30 @@ func HandleConfig(w http.ResponseWriter, r *http.Request) {
 		DeviceProfilesMu.RUnlock()
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"operationMode":   mode,
-			"refreshInterval": refresh,
-			"devices":         devices,
+			"operationMode":      mode,
+			"refreshInterval":    refresh,
+			"devices":            devices,
+			"roiCriticalAvoided": RoiCriticalAvoided,
+			"roiWarningAvoided":  RoiWarningAvoided,
+			"roiMinorAvoided":    RoiMinorAvoided,
+			"roiLaborCost":       RoiLaborCost,
+			"roiCalibrationCost": RoiCalibrationCost,
+			"roiPartCost":        RoiPartCost,
 		})
 		return
 	}
 
 	if r.Method == http.MethodPost {
 		var req struct {
-			OperationMode   string                 `json:"operationMode"`
-			RefreshInterval int                    `json:"refreshInterval"`
-			Devices         []models.DeviceProfile `json:"devices"`
+			OperationMode      string                 `json:"operationMode"`
+			RefreshInterval    int                    `json:"refreshInterval"`
+			Devices            []models.DeviceProfile `json:"devices"`
+			RoiCriticalAvoided *float64               `json:"roiCriticalAvoided,omitempty"`
+			RoiWarningAvoided  *float64               `json:"roiWarningAvoided,omitempty"`
+			RoiMinorAvoided    *float64               `json:"roiMinorAvoided,omitempty"`
+			RoiLaborCost       *float64               `json:"roiLaborCost,omitempty"`
+			RoiCalibrationCost *float64               `json:"roiCalibrationCost,omitempty"`
+			RoiPartCost        *float64               `json:"roiPartCost,omitempty"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid body: "+err.Error(), http.StatusBadRequest)
@@ -1158,18 +1170,43 @@ func HandleConfig(w http.ResponseWriter, r *http.Request) {
 		}
 		DeviceProfilesMu.Unlock()
 
+		if req.RoiCriticalAvoided != nil {
+			RoiCriticalAvoided = *req.RoiCriticalAvoided
+		}
+		if req.RoiWarningAvoided != nil {
+			RoiWarningAvoided = *req.RoiWarningAvoided
+		}
+		if req.RoiMinorAvoided != nil {
+			RoiMinorAvoided = *req.RoiMinorAvoided
+		}
+		if req.RoiLaborCost != nil {
+			RoiLaborCost = *req.RoiLaborCost
+		}
+		if req.RoiCalibrationCost != nil {
+			RoiCalibrationCost = *req.RoiCalibrationCost
+		}
+		if req.RoiPartCost != nil {
+			RoiPartCost = *req.RoiPartCost
+		}
+
 		// Save configuration and devices to PostgreSQL
-		if err := SaveConfigToDB(req.OperationMode, req.RefreshInterval, DeviceProfiles); err != nil {
+		if err := SaveConfigToDB(req.OperationMode, req.RefreshInterval, DeviceProfiles, RoiCriticalAvoided, RoiWarningAvoided, RoiMinorAvoided, RoiLaborCost, RoiCalibrationCost, RoiPartCost); err != nil {
 			http.Error(w, "Failed to save configuration to database: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":          "saved",
-			"operationMode":   req.OperationMode,
-			"refreshInterval": req.RefreshInterval,
-			"devices":         req.Devices,
+			"status":             "saved",
+			"operationMode":      req.OperationMode,
+			"refreshInterval":    req.RefreshInterval,
+			"devices":            req.Devices,
+			"roiCriticalAvoided": RoiCriticalAvoided,
+			"roiWarningAvoided":  RoiWarningAvoided,
+			"roiMinorAvoided":    RoiMinorAvoided,
+			"roiLaborCost":       RoiLaborCost,
+			"roiCalibrationCost": RoiCalibrationCost,
+			"roiPartCost":        RoiPartCost,
 		})
 		return
 	}

@@ -683,22 +683,22 @@ func calculateTicketROI() (float64, *models.RoiDetails) {
 			var cAvoided float64
 			severityLower := strings.ToLower(tk.Severity)
 			if severityLower == "critical" || severityLower == "critical_error" || severityLower == "severe_error" {
-				cAvoided = 15000.0
+				cAvoided = RoiCriticalAvoided
 			} else if severityLower == "warning" || severityLower == "warn_minor" || severityLower == "major_error" {
-				cAvoided = 4000.0
+				cAvoided = RoiWarningAvoided
 			} else {
-				cAvoided = 1000.0
+				cAvoided = RoiMinorAvoided
 			}
 
 			// Intervention Cost
-			cIntervention := 200.0 // Labor/base cost
+			cIntervention := RoiLaborCost // Labor/base cost
 			if tk.RequiresCalibration {
-				cIntervention += 400.0
+				cIntervention += RoiCalibrationCost
 			}
 			if tk.RequiresParts {
-				partCost := 800.0
+				partCost := RoiPartCost
 				if len(tk.PartsNeeded) > 0 {
-					partCost = float64(len(tk.PartsNeeded)) * 800.0
+					partCost = float64(len(tk.PartsNeeded)) * RoiPartCost
 				}
 				cIntervention += partCost
 			}

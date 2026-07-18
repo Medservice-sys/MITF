@@ -14,6 +14,13 @@ var (
 	FTPPort = 2121
 	FTPUser = "admin"
 	FTPPass = "admin"
+
+	RoiCriticalAvoided    = 15000.0
+	RoiWarningAvoided     = 4000.0
+	RoiMinorAvoided       = 1000.0
+	RoiLaborCost          = 200.0
+	RoiCalibrationCost    = 400.0
+	RoiPartCost           = 800.0
 )
 
 // LoadConfigOnStartup loads operation mode and refresh interval from DB, with fallback to config.json
@@ -30,7 +37,13 @@ func LoadConfigOnStartup() {
 		refresh_interval INT NOT NULL,
 		ftp_port INT NOT NULL DEFAULT 2121,
 		ftp_username VARCHAR(255) NOT NULL DEFAULT 'admin',
-		ftp_password VARCHAR(255) NOT NULL DEFAULT 'admin'
+		ftp_password VARCHAR(255) NOT NULL DEFAULT 'admin',
+		roi_critical_avoided DOUBLE PRECISION NOT NULL DEFAULT 15000.0,
+		roi_warning_avoided DOUBLE PRECISION NOT NULL DEFAULT 4000.0,
+		roi_minor_avoided DOUBLE PRECISION NOT NULL DEFAULT 1000.0,
+		roi_labor_cost DOUBLE PRECISION NOT NULL DEFAULT 200.0,
+		roi_calibration_cost DOUBLE PRECISION NOT NULL DEFAULT 400.0,
+		roi_part_cost DOUBLE PRECISION NOT NULL DEFAULT 800.0
 	);`
 
 	_, err := db.GetDB().Exec(createTableQuery)
@@ -43,6 +56,12 @@ func LoadConfigOnStartup() {
 		`ALTER TABLE system_config ADD COLUMN IF NOT EXISTS ftp_port INT NOT NULL DEFAULT 2121;`,
 		`ALTER TABLE system_config ADD COLUMN IF NOT EXISTS ftp_username VARCHAR(255) NOT NULL DEFAULT 'admin';`,
 		`ALTER TABLE system_config ADD COLUMN IF NOT EXISTS ftp_password VARCHAR(255) NOT NULL DEFAULT 'admin';`,
+		`ALTER TABLE system_config ADD COLUMN IF NOT EXISTS roi_critical_avoided DOUBLE PRECISION NOT NULL DEFAULT 15000.0;`,
+		`ALTER TABLE system_config ADD COLUMN IF NOT EXISTS roi_warning_avoided DOUBLE PRECISION NOT NULL DEFAULT 4000.0;`,
+		`ALTER TABLE system_config ADD COLUMN IF NOT EXISTS roi_minor_avoided DOUBLE PRECISION NOT NULL DEFAULT 1000.0;`,
+		`ALTER TABLE system_config ADD COLUMN IF NOT EXISTS roi_labor_cost DOUBLE PRECISION NOT NULL DEFAULT 200.0;`,
+		`ALTER TABLE system_config ADD COLUMN IF NOT EXISTS roi_calibration_cost DOUBLE PRECISION NOT NULL DEFAULT 400.0;`,
+		`ALTER TABLE system_config ADD COLUMN IF NOT EXISTS roi_part_cost DOUBLE PRECISION NOT NULL DEFAULT 800.0;`,
 	}
 	for _, q := range alterQueries {
 		_, _ = db.GetDB().Exec(q)
@@ -52,8 +71,15 @@ func LoadConfigOnStartup() {
 	var refresh int
 	var fPort int
 	var fUser, fPass string
+	var rCritical, rWarning, rMinor, rLabor, rCalib, rPart float64
 
-	err = db.GetDB().QueryRow("SELECT operation_mode, refresh_interval, ftp_port, ftp_username, ftp_password FROM system_config WHERE id = 1").Scan(&mode, &refresh, &fPort, &fUser, &fPass)
+	err = db.GetDB().QueryRow(`
+		SELECT operation_mode, refresh_interval, ftp_port, ftp_username, ftp_password,
+		       roi_critical_avoided, roi_warning_avoided, roi_minor_avoided,
+		       roi_labor_cost, roi_calibration_cost, roi_part_cost
+		FROM system_config WHERE id = 1
+	`).Scan(&mode, &refresh, &fPort, &fUser, &fPass, &rCritical, &rWarning, &rMinor, &rLabor, &rCalib, &rPart)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Println("[CONFIG] No config found in DB. Checking data/config.json...")
@@ -77,9 +103,12 @@ func LoadConfigOnStartup() {
 			}
 
 			// Insert into DB
-			_, err = db.GetDB().Exec(`INSERT INTO system_config (id, operation_mode, refresh_interval, ftp_port, ftp_username, ftp_password) 
-				VALUES (1, $1, $2, $3, $4, $5)`,
-				defaultMode, defaultRefresh, 2121, "admin", "admin")
+			_, err = db.GetDB().Exec(`
+				INSERT INTO system_config (id, operation_mode, refresh_interval, ftp_port, ftp_username, ftp_password,
+				                           roi_critical_avoided, roi_warning_avoided, roi_minor_avoided,
+				                           roi_labor_cost, roi_calibration_cost, roi_part_cost) 
+				VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+				defaultMode, defaultRefresh, 2121, "admin", "admin", 15000.0, 4000.0, 1000.0, 200.0, 400.0, 800.0)
 			if err != nil {
 				log.Printf("[CONFIG] Error inserting default config to DB: %v", err)
 			}
@@ -88,6 +117,12 @@ func LoadConfigOnStartup() {
 			fPort = 2121
 			fUser = "admin"
 			fPass = "admin"
+			rCritical = 15000.0
+			rWarning = 4000.0
+			rMinor = 1000.0
+			rLabor = 200.0
+			rCalib = 400.0
+			rPart = 800.0
 		} else {
 			log.Printf("[CONFIG] Error reading config from DB: %v", err)
 			return
@@ -106,7 +141,14 @@ func LoadConfigOnStartup() {
 	FTPUser = fUser
 	FTPPass = fPass
 
-	log.Printf("[CONFIG] Loaded from DB: operationMode=%s, refreshInterval=%ds, ftpPort=%d, ftpUser=%s", mode, refresh, fPort, fUser)
+	RoiCriticalAvoided = rCritical
+	RoiWarningAvoided = rWarning
+	RoiMinorAvoided = rMinor
+	RoiLaborCost = rLabor
+	RoiCalibrationCost = rCalib
+	RoiPartCost = rPart
+
+	log.Printf("[CONFIG] Loaded from DB: operationMode=%s, refreshInterval=%ds, ftpPort=%d, ftpUser=%s, roiCritical=%.1f", mode, refresh, fPort, fUser, rCritical)
 }
 
 // LoadDevicesOnStartup loads monitored devices from DB, with fallback to devices.json
@@ -215,7 +257,7 @@ func LoadDevicesOnStartup() {
 }
 
 // SaveConfigToDB saves the general config and devices list to PostgreSQL
-func SaveConfigToDB(mode string, refresh int, devices []models.DeviceProfile) error {
+func SaveConfigToDB(mode string, refresh int, devices []models.DeviceProfile, rCritical, rWarning, rMinor, rLabor, rCalib, rPart float64) error {
 	if db.GetDB() == nil {
 		return nil
 	}
@@ -227,9 +269,20 @@ func SaveConfigToDB(mode string, refresh int, devices []models.DeviceProfile) er
 	defer tx.Rollback()
 
 	// Update or insert system_config (keeping existing FTP columns)
-	_, err = tx.Exec(`INSERT INTO system_config (id, operation_mode, refresh_interval) VALUES (1, $1, $2)
-		ON CONFLICT (id) DO UPDATE SET operation_mode = EXCLUDED.operation_mode, refresh_interval = EXCLUDED.refresh_interval`,
-		mode, refresh)
+	_, err = tx.Exec(`INSERT INTO system_config (id, operation_mode, refresh_interval,
+	                                           roi_critical_avoided, roi_warning_avoided, roi_minor_avoided,
+	                                           roi_labor_cost, roi_calibration_cost, roi_part_cost) 
+		VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (id) DO UPDATE SET 
+			operation_mode = EXCLUDED.operation_mode, 
+			refresh_interval = EXCLUDED.refresh_interval,
+			roi_critical_avoided = EXCLUDED.roi_critical_avoided,
+			roi_warning_avoided = EXCLUDED.roi_warning_avoided,
+			roi_minor_avoided = EXCLUDED.roi_minor_avoided,
+			roi_labor_cost = EXCLUDED.roi_labor_cost,
+			roi_calibration_cost = EXCLUDED.roi_calibration_cost,
+			roi_part_cost = EXCLUDED.roi_part_cost`,
+		mode, refresh, rCritical, rWarning, rMinor, rLabor, rCalib, rPart)
 	if err != nil {
 		return err
 	}

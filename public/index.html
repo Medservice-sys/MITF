@@ -285,7 +285,7 @@
                             <i data-lucide="info" style="width: 14px; height: 14px; opacity: 0.7;"></i>
                         </span>
                         <div class="health-value-wrapper">
-                            <h2 id="health-roi" style="color: var(--info);">$0.00</h2>
+                            <h2 id="health-roi" style="color: var(--info);">Bs0.00</h2>
                         </div>
                         <span class="health-sub">Mantenimiento Predictivo</span>
                     </div>
@@ -1571,6 +1571,36 @@
                         </form>
                     </div>
                 </div>
+
+                <!-- Saved Bitacoras List (Historial de Bitácoras Guardadas) -->
+                <div class="glass-panel" style="margin-top: 24px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3>Historial de Bitácoras Guardadas (Tickets Cerrados)</h3>
+                        <div style="font-size: 0.85rem; color: var(--text-dim);">
+                            <span id="saved-bitacoras-count">0</span> bitácoras registradas
+                        </div>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="admin-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <th style="padding: 10px 12px;">ID</th>
+                                    <th style="padding: 10px 12px;">Fecha Cierre</th>
+                                    <th style="padding: 10px 12px;">Asunto</th>
+                                    <th style="padding: 10px 12px;">Tomógrafo / Logs</th>
+                                    <th style="padding: 10px 12px;">Ingeniero</th>
+                                    <th style="padding: 10px 12px;">Diagnóstico / Causa Raíz</th>
+                                    <th style="padding: 10px 12px;">Calibración</th>
+                                </tr>
+                            </thead>
+                            <tbody id="saved-bitacoras-tbody">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 20px;">Cargando bitácoras...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
 
             <!-- VIEW: ALARMAS RECONOCIDAS (ACKNOWLEDGES) -->
@@ -2206,6 +2236,69 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- ROI PRICE SETTING CARD -->
+                        <div class="glass-panel" style="padding: 24px; margin-top: 24px; display: flex; flex-direction: column; gap: 20px;">
+                            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="calculator" style="color: var(--accent); width: 20px; height: 20px;"></i>
+                                Configuración de Costos y Fórmula de Retorno de Inversión (ROI)
+                            </h3>
+                            <p class="subtitle" style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px; line-height: 1.4;">
+                                Ajuste los costos e ingresos simulados por tipo de evento y mantenimiento. Estos valores se utilizan para calcular el ROI financiero global del dashboard.
+                            </p>
+
+                            <!-- Formula box -->
+                            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 16px; border-radius: 8px; font-size: 0.85rem; line-height: 1.6;">
+                                <strong style="color: var(--accent); display: block; margin-bottom: 6px;">Fórmula del Retorno Neto (ROI):</strong>
+                                <div style="font-family: monospace; background: rgba(0, 0, 0, 0.2); padding: 8px 12px; border-radius: 4px; color: var(--text); overflow-x: auto; margin-bottom: 8px;">
+                                    ROI = (Costo Evitado Total) - (Costo de Intervención Total)
+                                </div>
+                                <ul style="margin: 0; padding-left: 20px; color: var(--text-dim); font-size: 0.8rem; display: flex; flex-direction: column; gap: 4px;">
+                                    <li><strong>Costo Evitado Total:</strong> Sumatoria de costos prevenidos según severidad del ticket cerrado (Crítico, Mayor/Warning o Menor).</li>
+                                    <li><strong>Costo de Intervención Total:</strong> Sumatoria de mano de obra base + calibración + (cantidad de repuestos × costo unitario de repuestos).</li>
+                                </ul>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+                                <!-- Column 1: Ahorros / Costo Evitado -->
+                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                    <h4 style="font-size: 0.9rem; color: var(--success); border-bottom: 1px solid rgba(0, 230, 115, 0.1); padding-bottom: 6px; margin: 0;">
+                                        Pérdidas Prevenidas (Costo Evitado)
+                                    </h4>
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 0.8rem; color: var(--text-dim);">Fallas Críticas (Bs)</label>
+                                        <input type="number" class="glass-input" id="setting-roi-critical" min="0" value="15000" style="width: 100%;">
+                                    </div>
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 0.8rem; color: var(--text-dim);">Fallas Mayores / Warning (Bs)</label>
+                                        <input type="number" class="glass-input" id="setting-roi-warning" min="0" value="4000" style="width: 100%;">
+                                    </div>
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 0.8rem; color: var(--text-dim);">Fallas Menores (Bs)</label>
+                                        <input type="number" class="glass-input" id="setting-roi-minor" min="0" value="1000" style="width: 100%;">
+                                    </div>
+                                </div>
+
+                                <!-- Column 2: Costos Operativos / Gastos -->
+                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                    <h4 style="font-size: 0.9rem; color: var(--critical); border-bottom: 1px solid rgba(255, 77, 77, 0.1); padding-bottom: 6px; margin: 0;">
+                                        Costos de Reparación (Intervención)
+                                    </h4>
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 0.8rem; color: var(--text-dim);">Mano de Obra Base / Visita (Bs)</label>
+                                        <input type="number" class="glass-input" id="setting-roi-labor" min="0" value="200" style="width: 100%;">
+                                    </div>
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 0.8rem; color: var(--text-dim);">Calibración Clínicas (Bs)</label>
+                                        <input type="number" class="glass-input" id="setting-roi-calibration" min="0" value="400" style="width: 100%;">
+                                    </div>
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 0.8rem; color: var(--text-dim);">Costo Unitario por Repuesto (Bs)</label>
+                                        <input type="number" class="glass-input" id="setting-roi-part" min="0" value="800" style="width: 100%;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
             </section>
@@ -2521,16 +2614,16 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
                         <div class="glass-panel" style="padding: 15px; border-left: 4px solid var(--success);">
                             <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Costo Evitado Total</span>
-                            <h2 id="roi-modal-avoided" style="color: var(--success); margin-top: 5px;">$0.00</h2>
+                            <h2 id="roi-modal-avoided" style="color: var(--success); margin-top: 5px;">Bs0.00</h2>
                             <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 8px; line-height: 1.3;">
-                                Pérdidas financieras prevenidas al solucionar fallas de forma predictiva (Críticas: $15K, Advertencias: $4K).
+                                Pérdidas financieras prevenidas al solucionar fallas de forma predictiva (Críticas: Bs15K, Advertencias: Bs4K).
                             </p>
                         </div>
                         <div class="glass-panel" style="padding: 15px; border-left: 4px solid var(--critical);">
                             <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">Costo de Intervención</span>
-                            <h2 id="roi-modal-intervention" style="color: var(--critical); margin-top: 5px;">$0.00</h2>
+                            <h2 id="roi-modal-intervention" style="color: var(--critical); margin-top: 5px;">Bs0.00</h2>
                             <p style="font-size: 0.7rem; color: var(--text-dim); margin-top: 8px; line-height: 1.3;">
-                                Gastos operativos incurridos en reparaciones, mano de obra ($200), repuestos ($800 c/u) y calibraciones ($400).
+                                Gastos operativos incurridos en reparaciones, mano de obra (Bs200), repuestos (Bs800 c/u) y calibraciones (Bs400).
                             </p>
                         </div>
                     </div>
@@ -2559,7 +2652,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 10px;">
                         <div>
                             <span style="font-size: 0.75rem; color: var(--text-dim);">Retorno Neto (ROI):</span>
-                            <h3 id="roi-modal-net" style="color: var(--info); font-size: 1.4rem;">$0.00</h3>
+                            <h3 id="roi-modal-net" style="color: var(--info); font-size: 1.4rem;">Bs0.00</h3>
                         </div>
                         <button id="btn-close-roi-modal-footer" class="btn btn-secondary glass-btn">Cerrar</button>
                     </div>
