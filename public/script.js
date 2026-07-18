@@ -737,8 +737,15 @@ async function refreshDashboard() {
     
     const params = new URLSearchParams();
     const restrictId = sessionStorage.getItem('user-device-id');
-    if (restrictId) {
-        params.append('deviceId', restrictId);
+    let selectedDeviceId = restrictId;
+    if (!restrictId) {
+        const dashDeviceSelect = document.getElementById('dash-device-filter');
+        if (dashDeviceSelect) {
+            selectedDeviceId = dashDeviceSelect.value;
+        }
+    }
+    if (selectedDeviceId) {
+        params.append('deviceId', selectedDeviceId);
     }
 
     if (dashDate) {
@@ -2873,12 +2880,11 @@ function renderDevicesConfigList() {
             e.preventDefault();
             dev.pinging = true;
             renderDevicesConfigList();
-            
             try {
                 const res = await fetch('/api/devices/ping', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: dev.id })
+                    body: JSON.stringify(dev)
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -3090,6 +3096,7 @@ async function loadConfigMode() {
                     ...d
                 }));
                 renderDevicesConfigList();
+                populateDashDeviceFilter();
             }
 
             if (mode === "service") {
@@ -3232,6 +3239,7 @@ function initUserRole() {
                     
                     updateSidebarUserDisplay();
                     applyRoleAccessControl(data.user.role);
+                    populateDashDeviceFilter();
                     
                     usernameInput.value = '';
                     passwordInput.value = '';
@@ -4715,4 +4723,51 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // Set up dash device filter change listener
+    const dashDevFilter = document.getElementById('dash-device-filter');
+    if (dashDevFilter) {
+        dashDevFilter.addEventListener('change', () => {
+            refreshDashboard();
+        });
+    }
+    populateDashDeviceFilter();
 });
+
+function populateDashDeviceFilter() {
+    const filter = document.getElementById('dash-device-filter');
+    if (!filter) return;
+
+    const restrictId = sessionStorage.getItem('user-device-id');
+    
+    // Clear previous options
+    filter.innerHTML = '';
+
+    if (restrictId) {
+        // User has a restricted device. Disable select and show only their device.
+        const dev = configDevices.find(d => d.id === restrictId);
+        const opt = document.createElement('option');
+        opt.value = restrictId;
+        opt.textContent = dev ? dev.name : restrictId;
+        filter.appendChild(opt);
+        filter.value = restrictId;
+        filter.disabled = true;
+        filter.style.opacity = '0.8';
+    } else {
+        // User has admin access, populate all options
+        const optAll = document.createElement('option');
+        optAll.value = '';
+        optAll.textContent = 'Todos los Tomógrafos';
+        filter.appendChild(optAll);
+
+        configDevices.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = d.name;
+            filter.appendChild(opt);
+        });
+        filter.disabled = false;
+        filter.style.opacity = '1';
+    }
+}
+

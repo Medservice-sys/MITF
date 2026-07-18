@@ -24,6 +24,7 @@ func main() {
 	api.LoadConfigOnStartup()
 	api.LoadDevicesOnStartup()
 	api.LoadUsersOnStartup()
+	api.LoadMaintenanceOnStartup()
 
 	// Start embedded FTP server for CT Logs (Fallback when SSH is off)
 	ftp.StartFTPServer(api.FTPPort, api.FTPUser, api.FTPPass)

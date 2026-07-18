@@ -1,9 +1,11 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -11,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"mitf/internal/db"
 	"mitf/internal/metrics"
 	"mitf/internal/models"
 
@@ -178,9 +181,233 @@ func initMaintenanceRecords() {
 	saveMaintenanceRecords()
 }
 
+func saveTicketToDB(tk TicketRecord) error {
+	if db.GetDB() == nil {
+		return nil
+	}
+
+	tasksJSON, _ := json.Marshal(tk.Tasks)
+	channelJSON, _ := json.Marshal(tk.Channel)
+	relatedEntityJSON, _ := json.Marshal(tk.RelatedEntity)
+	relatedPartyJSON, _ := json.Marshal(tk.RelatedParty)
+	notesJSON, _ := json.Marshal(tk.Notes)
+	partsNeededJSON, _ := json.Marshal(tk.PartsNeeded)
+
+	query := `
+	INSERT INTO tickets (
+		id, title, severity, engineer, related_logs, status, date_opened, date_closed,
+		review_general, diagnosis, tasks, description, priority, ticket_type, status_change_reason,
+		channel, related_entity, related_party, notes, resolution_type, remote_evidence,
+		l1_troubleshooting_done, l1_resolution_attempt, l1_standard_success, is_masked_failure,
+		escalated_to_l2, l2_engineer, l2_diagnosis, requires_parts, parts_needed,
+		requires_calibration, calibration_status, client_approval, image_quality_notes
+	) VALUES (
+		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34
+	) ON CONFLICT (id) DO UPDATE SET
+		title = EXCLUDED.title,
+		severity = EXCLUDED.severity,
+		engineer = EXCLUDED.engineer,
+		related_logs = EXCLUDED.related_logs,
+		status = EXCLUDED.status,
+		date_opened = EXCLUDED.date_opened,
+		date_closed = EXCLUDED.date_closed,
+		review_general = EXCLUDED.review_general,
+		diagnosis = EXCLUDED.diagnosis,
+		tasks = EXCLUDED.tasks,
+		description = EXCLUDED.description,
+		priority = EXCLUDED.priority,
+		ticket_type = EXCLUDED.ticket_type,
+		status_change_reason = EXCLUDED.status_change_reason,
+		channel = EXCLUDED.channel,
+		related_entity = EXCLUDED.related_entity,
+		related_party = EXCLUDED.related_party,
+		notes = EXCLUDED.notes,
+		resolution_type = EXCLUDED.resolution_type,
+		remote_evidence = EXCLUDED.remote_evidence,
+		l1_troubleshooting_done = EXCLUDED.l1_troubleshooting_done,
+		l1_resolution_attempt = EXCLUDED.l1_resolution_attempt,
+		l1_standard_success = EXCLUDED.l1_standard_success,
+		is_masked_failure = EXCLUDED.is_masked_failure,
+		escalated_to_l2 = EXCLUDED.escalated_to_l2,
+		l2_engineer = EXCLUDED.l2_engineer,
+		l2_diagnosis = EXCLUDED.l2_diagnosis,
+		requires_parts = EXCLUDED.requires_parts,
+		parts_needed = EXCLUDED.parts_needed,
+		requires_calibration = EXCLUDED.requires_calibration,
+		calibration_status = EXCLUDED.calibration_status,
+		client_approval = EXCLUDED.client_approval,
+		image_quality_notes = EXCLUDED.image_quality_notes
+	`
+
+	_, err := db.GetDB().Exec(query,
+		tk.ID, tk.Title, tk.Severity, tk.Engineer, tk.RelatedLogs, tk.Status, tk.DateOpened, tk.DateClosed,
+		tk.ReviewGeneral, tk.Diagnosis, tasksJSON, tk.Description, tk.Priority, tk.TicketType, tk.StatusChangeReason,
+		channelJSON, relatedEntityJSON, relatedPartyJSON, notesJSON, tk.ResolutionType, tk.RemoteEvidence,
+		tk.L1TroubleshootingDone, tk.L1ResolutionAttempt, tk.L1StandardSuccess, tk.IsMaskedFailure,
+		tk.EscalatedToL2, tk.L2Engineer, tk.L2Diagnosis, tk.RequiresParts, partsNeededJSON,
+		tk.RequiresCalibration, tk.CalibrationStatus, tk.ClientApproval, tk.ImageQualityNotes,
+	)
+	return err
+}
+
 func saveMaintenanceRecords() {
+	// Fallback/backup local JSON file
 	data, _ := json.MarshalIndent(ticketRecords, "", "  ")
 	_ = os.WriteFile("data/tickets.json", data, 0644)
+
+	// Save to DB
+	for _, tk := range ticketRecords {
+		if err := saveTicketToDB(tk); err != nil {
+			log.Printf("[TICKETS] Error saving ticket %s to DB: %v", tk.ID, err)
+		}
+	}
+}
+
+func LoadMaintenanceOnStartup() {
+	if db.GetDB() == nil {
+		log.Println("[TICKETS] WARNING: Database connection is nil, tickets table cannot be initialized.")
+		return
+	}
+
+	createTableQuery := `
+	CREATE TABLE IF NOT EXISTS tickets (
+		id VARCHAR(255) PRIMARY KEY,
+		title VARCHAR(255) NOT NULL,
+		severity VARCHAR(50) NOT NULL,
+		engineer VARCHAR(255) NOT NULL,
+		related_logs TEXT NOT NULL,
+		status VARCHAR(50) NOT NULL,
+		date_opened VARCHAR(50) NOT NULL,
+		date_closed VARCHAR(50) NULL,
+		review_general TEXT NULL,
+		diagnosis TEXT NULL,
+		tasks JSONB NULL,
+		description TEXT NULL,
+		priority VARCHAR(50) NULL,
+		ticket_type VARCHAR(255) NULL,
+		status_change_reason TEXT NULL,
+		channel JSONB NULL,
+		related_entity JSONB NULL,
+		related_party JSONB NULL,
+		notes JSONB NULL,
+		resolution_type VARCHAR(255) NULL,
+		remote_evidence TEXT NULL,
+		l1_troubleshooting_done BOOLEAN NULL,
+		l1_resolution_attempt TEXT NULL,
+		l1_standard_success BOOLEAN NULL,
+		is_masked_failure BOOLEAN NULL,
+		escalated_to_l2 BOOLEAN NULL,
+		l2_engineer VARCHAR(255) NULL,
+		l2_diagnosis TEXT NULL,
+		requires_parts BOOLEAN NULL,
+		parts_needed JSONB NULL,
+		requires_calibration BOOLEAN NULL,
+		calibration_status VARCHAR(50) NULL,
+		client_approval VARCHAR(50) NULL,
+		image_quality_notes TEXT NULL
+	);`
+
+	_, err := db.GetDB().Exec(createTableQuery)
+	if err != nil {
+		log.Fatalf("[TICKETS] Error creating tickets table: %v", err)
+	}
+
+	var count int
+	err = db.GetDB().QueryRow("SELECT COUNT(*) FROM tickets").Scan(&count)
+	if err != nil {
+		log.Fatalf("[TICKETS] Error checking tickets count: %v", err)
+	}
+
+	maintMu.Lock()
+	defer maintMu.Unlock()
+
+	if count == 0 {
+		log.Println("[TICKETS] Tickets table is empty. Migrating existing tickets from data/tickets.json...")
+		file, err := os.ReadFile("data/tickets.json")
+		if err == nil {
+			var list []TicketRecord
+			if json.Unmarshal(file, &list) == nil {
+				for _, tk := range list {
+					if err := saveTicketToDB(tk); err != nil {
+						log.Printf("[TICKETS] Error migrating ticket %s to DB: %v", tk.ID, err)
+					}
+				}
+				log.Printf("[TICKETS] Migrated %d tickets to database.", len(list))
+			}
+		}
+	}
+
+	// Read all from DB into memory
+	rows, err := db.GetDB().Query(`
+		SELECT id, title, severity, engineer, related_logs, status, date_opened, date_closed,
+		review_general, diagnosis, tasks, description, priority, ticket_type, status_change_reason,
+		channel, related_entity, related_party, notes, resolution_type, remote_evidence,
+		l1_troubleshooting_done, l1_resolution_attempt, l1_standard_success, is_masked_failure,
+		escalated_to_l2, l2_engineer, l2_diagnosis, requires_parts, parts_needed,
+		requires_calibration, calibration_status, client_approval, image_quality_notes
+		FROM tickets ORDER BY date_opened DESC
+	`)
+	if err != nil {
+		log.Printf("[TICKETS] Error querying tickets: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	var loadedTickets []TicketRecord
+	for rows.Next() {
+		var tk TicketRecord
+		var dateClosed, reviewGen, diag, desc, prio, tType, scReason, resType, remEv, l1Attempt, l2Eng, l2Diag, calStatus, approval, imgNotes sql.NullString
+		var tasksRaw, channelRaw, relEntityRaw, relPartyRaw, notesRaw, partsRaw []byte
+		var l1Done, l1Success, isMasked, escL2, reqParts, reqCal sql.NullBool
+
+		err := rows.Scan(
+			&tk.ID, &tk.Title, &tk.Severity, &tk.Engineer, &tk.RelatedLogs, &tk.Status, &tk.DateOpened, &dateClosed,
+			&reviewGen, &diag, &tasksRaw, &desc, &prio, &tType, &scReason,
+			&channelRaw, &relEntityRaw, &relPartyRaw, &notesRaw, &resType, &remEv,
+			&l1Done, &l1Attempt, &l1Success, &isMasked,
+			&escL2, &l2Eng, &l2Diag, &reqParts, &partsRaw,
+			&reqCal, &calStatus, &approval, &imgNotes,
+		)
+		if err != nil {
+			log.Printf("[TICKETS] Error scanning ticket row: %v", err)
+			continue
+		}
+
+		if dateClosed.Valid { tk.DateClosed = dateClosed.String }
+		if reviewGen.Valid { tk.ReviewGeneral = reviewGen.String }
+		if diag.Valid { tk.Diagnosis = diag.String }
+		if desc.Valid { tk.Description = desc.String }
+		if prio.Valid { tk.Priority = prio.String }
+		if tType.Valid { tk.TicketType = tType.String }
+		if scReason.Valid { tk.StatusChangeReason = scReason.String }
+		if resType.Valid { tk.ResolutionType = resType.String }
+		if remEv.Valid { tk.RemoteEvidence = remEv.String }
+		if l1Attempt.Valid { tk.L1ResolutionAttempt = l1Attempt.String }
+		if l2Eng.Valid { tk.L2Engineer = l2Eng.String }
+		if l2Diag.Valid { tk.L2Diagnosis = l2Diag.String }
+		if calStatus.Valid { tk.CalibrationStatus = calStatus.String }
+		if approval.Valid { tk.ClientApproval = approval.String }
+		if imgNotes.Valid { tk.ImageQualityNotes = imgNotes.String }
+
+		if l1Done.Valid { tk.L1TroubleshootingDone = l1Done.Bool }
+		if l1Success.Valid { tk.L1StandardSuccess = l1Success.Bool }
+		if isMasked.Valid { tk.IsMaskedFailure = isMasked.Bool }
+		if escL2.Valid { tk.EscalatedToL2 = escL2.Bool }
+		if reqParts.Valid { tk.RequiresParts = reqParts.Bool }
+		if reqCal.Valid { tk.RequiresCalibration = reqCal.Bool }
+
+		if len(tasksRaw) > 0 { _ = json.Unmarshal(tasksRaw, &tk.Tasks) }
+		if len(channelRaw) > 0 { _ = json.Unmarshal(channelRaw, &tk.Channel) }
+		if len(relEntityRaw) > 0 { _ = json.Unmarshal(relEntityRaw, &tk.RelatedEntity) }
+		if len(relPartyRaw) > 0 { _ = json.Unmarshal(relPartyRaw, &tk.RelatedParty) }
+		if len(notesRaw) > 0 { _ = json.Unmarshal(notesRaw, &tk.Notes) }
+		if len(partsRaw) > 0 { _ = json.Unmarshal(partsRaw, &tk.PartsNeeded) }
+
+		loadedTickets = append(loadedTickets, tk)
+	}
+
+	ticketRecords = loadedTickets
+	log.Printf("[TICKETS] Loaded %d tickets from PostgreSQL database", len(ticketRecords))
 }
 
 func initKnowledgeBase() {
@@ -1443,27 +1670,35 @@ func HandleDevicePing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		ID string `json:"id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
-		http.Error(w, "Invalid body", http.StatusBadRequest)
+	var req models.DeviceProfile
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	DeviceProfilesMu.RLock()
-	var targetDev *models.DeviceProfile
-	for idx, dev := range DeviceProfiles {
-		if dev.ID == req.ID {
-			targetDev = &DeviceProfiles[idx]
-			break
+	var targetDev models.DeviceProfile
+	if req.Host != "" {
+		targetDev = req
+	} else {
+		if req.ID == "" {
+			http.Error(w, "Device ID or host details are required", http.StatusBadRequest)
+			return
 		}
-	}
-	DeviceProfilesMu.RUnlock()
+		DeviceProfilesMu.RLock()
+		found := false
+		for _, dev := range DeviceProfiles {
+			if dev.ID == req.ID {
+				targetDev = dev
+				found = true
+				break
+			}
+		}
+		DeviceProfilesMu.RUnlock()
 
-	if targetDev == nil {
-		http.Error(w, "Device not found", http.StatusNotFound)
-		return
+		if !found {
+			http.Error(w, "Device not found", http.StatusNotFound)
+			return
+		}
 	}
 
 	// Ping logic

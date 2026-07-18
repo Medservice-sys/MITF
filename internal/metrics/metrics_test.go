@@ -90,3 +90,138 @@ func TestCalculateHealthIndices(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveActiveTube(t *testing.T) {
+	// Need to initialize TubeConfig manually for testing if file is missing
+	TubeConfig = TubeModelsConfig{
+		TubeModels: []TubeModel{
+			{
+				Model:            "Performix 40 Plus LB",
+				EolMasMin:        180000000,
+				Bearing:          "liquid",
+				HousingRefFamily: "2137130-xx",
+			},
+			{
+				Model:            "Performix Pro",
+				EolMasMin:        200000000,
+				Bearing:          "ball",
+				GeSystems:        []string{"LightSpeed VCT"},
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		events        []models.UnifiedLogEvent
+		expectedModel string
+	}{
+		{
+			name:          "Fallback to default",
+			events:        []models.UnifiedLogEvent{},
+			expectedModel: "Performix 40 Plus LB",
+		},
+		{
+			name: "Match by GE System name",
+			events: []models.UnifiedLogEvent{
+				{Message: "system initialized LightSpeed VCT scanner"},
+			},
+			expectedModel: "Performix Pro",
+		},
+		{
+			name: "Match by Housing Ref",
+			events: []models.UnifiedLogEvent{
+				{Message: "replaced tube housing 2137130"},
+			},
+			expectedModel: "Performix 40 Plus LB",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ResolveActiveTube(tt.events)
+			if result.Model != tt.expectedModel {
+				t.Errorf("expected model %s, got %s", tt.expectedModel, result.Model)
+			}
+		})
+	}
+}
+
+func TestGetDynamicTubeAlarms(t *testing.T) {
+	TubeConfig = TubeModelsConfig{
+		TubeModels: []TubeModel{
+			{
+				Model:     "Performix 40 Plus LB",
+				EolMasMin: 100000, // Small value for easy testing
+				Bearing:   "liquid",
+			},
+		},
+	}
+
+	tests := []struct {
+		name            string
+		events          []models.UnifiedLogEvent
+		expectedAlarms  int
+		expectedHighest string // WARNING or CRITICAL
+	}{
+		{
+			name:           "No alarms",
+			events:         []models.UnifiedLogEvent{{Message: "70,000 mAs", Subsystem: "tube"}},
+			expectedAlarms: 0,
+		},
+		{
+			name:            "Warning alarm (80%)",
+			events:          []models.UnifiedLogEvent{{Message: "85,000 mAs", Subsystem: "tube"}},
+			expectedAlarms:  1,
+			expectedHighest: "WARNING",
+		},
+		{
+			name:            "Critical alarm (95%)",
+			events:          []models.UnifiedLogEvent{{Message: "96,000 mAs", Subsystem: "tube"}},
+			expectedAlarms:  2, // triggers WARNING and CRITICAL
+			expectedHighest: "CRITICAL",
+		},
+		{
+			name: "Thermal trigger",
+			events: []models.UnifiedLogEvent{
+				{Message: "thermal event 1", Subsystem: "cooling"},
+				{Message: "thermal event 2", Subsystem: "cooling"},
+				{Message: "thermal event 3", Subsystem: "cooling"},
+				{Message: "thermal event 4", Subsystem: "cooling"},
+				{Message: "thermal event 5", Subsystem: "cooling"},
+				{Message: "thermal event 6", Subsystem: "cooling"},
+				{Message: "thermal event 7", Subsystem: "cooling"},
+				{Message: "thermal event 8", Subsystem: "cooling"},
+				{Message: "thermal event 9", Subsystem: "cooling"},
+				{Message: "thermal event 10", Subsystem: "cooling"},
+				{Message: "thermal event 11", Subsystem: "cooling"},
+				{Message: "thermal event 12", Subsystem: "cooling"},
+				{Message: "thermal event 13", Subsystem: "cooling"},
+				{Message: "thermal event 14", Subsystem: "cooling"},
+				{Message: "thermal event 15", Subsystem: "cooling"}, // 15 is limit for liquid bearing
+			},
+			expectedAlarms:  1,
+			expectedHighest: "CRITICAL",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			alarms := GetDynamicTubeAlarms(tt.events)
+			if len(alarms) != tt.expectedAlarms {
+				t.Errorf("expected %d alarms, got %d", tt.expectedAlarms, len(alarms))
+			}
+			if tt.expectedHighest != "" {
+				hasExpected := false
+				for _, a := range alarms {
+					if a.Severity == tt.expectedHighest {
+						hasExpected = true
+						break
+					}
+				}
+				if !hasExpected {
+					t.Errorf("expected to find severity %s but didn't", tt.expectedHighest)
+				}
+			}
+		})
+	}
+}
