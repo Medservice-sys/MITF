@@ -1150,13 +1150,22 @@ func HandleConfig(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if req.OperationMode != "online" && req.OperationMode != "service" {
+		if req.OperationMode == "" {
+			OperationModeMu.RLock()
+			req.OperationMode = OperationMode
+			OperationModeMu.RUnlock()
+		} else if req.OperationMode != "online" && req.OperationMode != "service" {
 			http.Error(w, "Invalid mode (must be 'online' or 'service')", http.StatusBadRequest)
 			return
 		}
 
 		if req.RefreshInterval < 5 {
-			req.RefreshInterval = 15
+			DeviceProfilesMu.RLock()
+			req.RefreshInterval = GlobalRefreshSec
+			DeviceProfilesMu.RUnlock()
+			if req.RefreshInterval < 5 {
+				req.RefreshInterval = 15
+			}
 		}
 
 		OperationModeMu.Lock()
@@ -1742,7 +1751,11 @@ func HandleDevicePing(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	host := targetDev.Host
 	if !strings.Contains(host, ":") {
-		host = host + ":22"
+		port := targetDev.Port
+		if port <= 0 {
+			port = 22
+		}
+		host = fmt.Sprintf("%s:%d", targetDev.Host, port)
 	}
 
 	// 1. TCP dial

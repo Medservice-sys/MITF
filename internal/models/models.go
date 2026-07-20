@@ -80,6 +80,7 @@ type DeviceProfile struct {
 	ID           string `json:"id"`
 	Name         string `json:"name"`
 	Host         string `json:"host"`
+	Port         int    `json:"port"`
 	User         string `json:"user"`
 	Password     string `json:"password"`
 	Brand        string `json:"brand"`        // "GE", "Philips", "Siemens", "Toshiba", "Hitachi"

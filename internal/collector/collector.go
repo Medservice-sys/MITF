@@ -256,6 +256,7 @@ func (c *FileCollector) Collect(mode string) ([]LogFileContent, error) {
 // SSHCollector implements remote log collection using ssh.Client.
 type SSHCollector struct {
 	host      string
+	port      int
 	user      string
 	password  string
 	mode      string
@@ -273,6 +274,7 @@ func NewSSHCollector() (*SSHCollector, error) {
 	}
 	return &SSHCollector{
 		host:      config.AppConfig.SSHHost,
+		port:      22,
 		user:      config.AppConfig.SSHUser,
 		password:  config.AppConfig.SSHPassword,
 		mode:      config.AppConfig.SSHMode,
@@ -289,8 +291,13 @@ func NewSSHCollectorForDevice(dev models.DeviceProfile) (*SSHCollector, error) {
 	if err != nil {
 		return nil, err
 	}
+	port := dev.Port
+	if port <= 0 {
+		port = 22
+	}
 	return &SSHCollector{
 		host:      dev.Host,
+		port:      port,
 		user:      dev.User,
 		password:  dev.Password,
 		mode:      dev.SSHMode,
@@ -345,25 +352,34 @@ func (c *SSHCollector) Collect(mode string) ([]LogFileContent, error) {
 		}
 	}
 
-	log.Printf("[SSH] Attempting TCP connection to %s...", c.host)
-	conn, err := net.DialTimeout("tcp", c.host, 3*time.Second)
+	targetAddr := c.host
+	if !strings.Contains(targetAddr, ":") {
+		p := c.port
+		if p <= 0 {
+			p = 22
+		}
+		targetAddr = fmt.Sprintf("%s:%d", c.host, p)
+	}
+
+	log.Printf("[SSH] Attempting TCP connection to %s...", targetAddr)
+	conn, err := net.DialTimeout("tcp", targetAddr, 3*time.Second)
 	if err != nil {
-		log.Printf("[SSH] TCP connection failed to %s: %v", c.host, err)
+		log.Printf("[SSH] TCP connection failed to %s: %v", targetAddr, err)
 		return nil, fmt.Errorf("TCP dial error: %w", err)
 	}
-	log.Printf("[SSH] TCP connection established to %s. Starting SSH handshake...", c.host)
+	log.Printf("[SSH] TCP connection established to %s. Starting SSH handshake...", targetAddr)
 
 	// Set deadline for the SSH handshake (5 seconds) to avoid hanging indefinitely
 	_ = conn.SetDeadline(time.Now().Add(5 * time.Second))
-	sshConn, chans, reqs, err := ssh.NewClientConn(conn, c.host, sshConfig)
+	sshConn, chans, reqs, err := ssh.NewClientConn(conn, targetAddr, sshConfig)
 	if err != nil {
 		conn.Close()
-		log.Printf("[SSH] SSH handshake failed with %s: %v", c.host, err)
+		log.Printf("[SSH] SSH handshake failed with %s: %v", targetAddr, err)
 		return nil, fmt.Errorf("SSH handshake error: %w", err)
 	}
 	// Clear connection deadline for normal operations
 	_ = conn.SetDeadline(time.Time{})
-	log.Printf("[SSH] SSH connection authenticated successfully to %s as user %s", c.host, c.user)
+	log.Printf("[SSH] SSH connection authenticated successfully to %s as user %s", targetAddr, c.user)
 
 	client := ssh.NewClient(sshConn, chans, reqs)
 	defer client.Close()

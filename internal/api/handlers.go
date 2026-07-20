@@ -27,7 +27,7 @@ func HandleData(w http.ResponseWriter, r *http.Request) {
 
 	var filtered []models.UnifiedLogEvent
 	for _, ev := range events {
-		if deviceID != "" && ev.DeviceID != deviceID {
+		if !matchDevice(deviceID, ev) {
 			continue
 		}
 		if hasRange && !fromTime.IsZero() && ev.Timestamp.Before(fromTime) {
@@ -73,7 +73,7 @@ func HandleMetrics(w http.ResponseWriter, r *http.Request) {
 
 	var filtered []models.UnifiedLogEvent
 	for _, ev := range events {
-		if deviceID != "" && ev.DeviceID != deviceID {
+		if !matchDevice(deviceID, ev) {
 			continue
 		}
 		if hasRange && !fromTime.IsZero() && ev.Timestamp.Before(fromTime) {
@@ -178,7 +178,7 @@ func HandleHistory(w http.ResponseWriter, r *http.Request) {
 
 	var filteredEvents []models.UnifiedLogEvent
 	for _, ev := range events {
-		if deviceID != "" && ev.DeviceID != deviceID {
+		if !matchDevice(deviceID, ev) {
 			continue
 		}
 		if fromStr != "" {
@@ -264,7 +264,7 @@ func HandleSubsystems(w http.ResponseWriter, r *http.Request) {
 
 	shiDegradation := make(map[string]float64)
 	for _, ev := range events {
-		if deviceID != "" && ev.DeviceID != deviceID {
+		if !matchDevice(deviceID, ev) {
 			continue
 		}
 		sub := strings.ToLower(ev.Subsystem)
@@ -323,7 +323,7 @@ func HandleHealth(w http.ResponseWriter, r *http.Request) {
 
 	var filtered []models.UnifiedLogEvent
 	for _, ev := range events {
-		if deviceID != "" && ev.DeviceID != deviceID {
+		if !matchDevice(deviceID, ev) {
 			continue
 		}
 		filtered = append(filtered, ev)
@@ -386,9 +386,17 @@ func HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.URL.Query().Get("deviceId")
 	events := getProcessedEvents()
 
+	fromTime, toTime, hasRange := parseDateRange(r, events)
+
 	var filtered []models.UnifiedLogEvent
 	for _, ev := range events {
-		if deviceID != "" && ev.DeviceID != deviceID {
+		if !matchDevice(deviceID, ev) {
+			continue
+		}
+		if hasRange && !fromTime.IsZero() && ev.Timestamp.Before(fromTime) {
+			continue
+		}
+		if hasRange && !toTime.IsZero() && ev.Timestamp.After(toTime) {
 			continue
 		}
 		filtered = append(filtered, ev)
@@ -457,7 +465,7 @@ func HandleClassification(w http.ResponseWriter, r *http.Request) {
 	fromTime, toTime, hasRange := parseDateRange(r, events)
 	var filteredEvents []models.UnifiedLogEvent
 	for _, ev := range events {
-		if deviceID != "" && ev.DeviceID != deviceID {
+		if !matchDevice(deviceID, ev) {
 			continue
 		}
 		if hasRange && !fromTime.IsZero() && ev.Timestamp.Before(fromTime) {
@@ -728,4 +736,36 @@ func calculateTicketROI() (float64, *models.RoiDetails) {
 	}
 
 	return roi, details
+}
+
+// matchDevice checks if a log event matches the requested device ID, Host, or Name
+func matchDevice(deviceID string, ev models.UnifiedLogEvent) bool {
+	if deviceID == "" {
+		return true
+	}
+	if ev.DeviceID == deviceID || ev.Host == deviceID {
+		return true
+	}
+
+	DeviceProfilesMu.RLock()
+	defer DeviceProfilesMu.RUnlock()
+	for _, dev := range DeviceProfiles {
+		if dev.ID == deviceID {
+			if dev.Host != "" && (ev.Host == dev.Host || strings.EqualFold(ev.Host, dev.Host)) {
+				return true
+			}
+			if dev.Name != "" && (strings.Contains(strings.ToLower(ev.Host), strings.ToLower(dev.Name)) || strings.Contains(strings.ToLower(dev.Name), strings.ToLower(ev.Host))) {
+				return true
+			}
+		}
+	}
+
+	// Fallback substring check
+	dLower := strings.ToLower(deviceID)
+	hLower := strings.ToLower(ev.Host)
+	if hLower != "" && (strings.Contains(hLower, dLower) || strings.Contains(dLower, hLower)) {
+		return true
+	}
+
+	return false
 }
