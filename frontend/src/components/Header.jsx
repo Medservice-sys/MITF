@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { RefreshCw, Sliders, Calendar, Server, Loader2 } from 'lucide-react';
+import { RefreshCw, Sliders, Calendar, Server, Loader2, Menu } from 'lucide-react';
 
 const viewTitles = {
   dashboard: { title: 'Dashboard Principal', subtitle: 'Vista general del estado de salud del tomógrafo GE CT' },
@@ -39,6 +39,7 @@ export const Header = () => {
     refreshData,
     devicesList,
     isLoadingData,
+    toggleSidebar,
   } = useApp();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -62,9 +63,18 @@ export const Header = () => {
 
   return (
     <header className="glass-header">
-      <div className="header-title">
-        <h1>{viewMeta.title}</h1>
-        <p className="subtitle">{viewMeta.subtitle}</p>
+      <div className="header-title-wrapper">
+        <button
+          className="mobile-menu-btn"
+          onClick={toggleSidebar}
+          title="Abrir Menú"
+        >
+          <Menu style={{ width: 22, height: 22 }} />
+        </button>
+        <div className="header-title">
+          <h1>{viewMeta.title}</h1>
+          <p className="subtitle">{viewMeta.subtitle}</p>
+        </div>
       </div>
 
       <div className="header-controls">
@@ -72,7 +82,6 @@ export const Header = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
           {isLoadingData ? (
             <div>
-              <Loader2 style={{ width: 14, height: 14, color: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
               <span
                 style={{
                   fontSize: '0.72rem',
@@ -84,6 +93,7 @@ export const Header = () => {
               >
                 Cargando...
               </span>
+              <Loader2 style={{ width: 14, height: 14, color: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
             </div>
           ) : (
             <Server style={{ width: 14, height: 14, color: selectedDevice ? 'var(--primary)' : 'var(--text-dim)' }} />

@@ -20,14 +20,16 @@ import {
   Settings,
   LogOut,
   History,
+  X,
 } from 'lucide-react';
 
 export const Sidebar = () => {
-  const { activeView, setActiveView, isBackendOnline } = useApp();
+  const { activeView, setActiveView, isBackendOnline, isSidebarOpen, closeSidebar } = useApp();
   const { userRole, userFullName, logout } = useAuth();
 
   const handleNavClick = (viewId) => {
     setActiveView(viewId);
+    closeSidebar();
   };
 
   const roleLabel =
@@ -38,14 +40,28 @@ export const Sidebar = () => {
       : 'Operario';
 
   return (
-    <aside className="sidebar glass-panel">
-      <div className="logo-area">
-        <Activity className="icon-primary" style={{ width: 28, height: 28 }} />
-        <div>
-          <h2>MITF-TOM</h2>
-          <span className="logo-version">v1.2 React</span>
+    <>
+      <div
+        className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`}
+        onClick={closeSidebar}
+      />
+      <aside className={`sidebar glass-panel ${isSidebarOpen ? 'open' : ''}`}>
+        <div className="logo-area" style={{ justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Activity className="icon-primary" style={{ width: 28, height: 28 }} />
+            <div>
+              <h2>MITF-TOM</h2>
+              <span className="logo-version">v1.2 React</span>
+            </div>
+          </div>
+          <button
+            className="sidebar-close-btn"
+            onClick={closeSidebar}
+            title="Cerrar menú"
+          >
+            <X style={{ width: 20, height: 20 }} />
+          </button>
         </div>
-      </div>
 
       <nav className="nav-menu">
         <div className="nav-category">GENERAL</div>
@@ -213,5 +229,6 @@ export const Sidebar = () => {
         </div>
       </div>
     </aside>
+    </>
   );
 };

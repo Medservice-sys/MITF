@@ -89,10 +89,12 @@ export function App() {
   return (
     <AuthProvider>
       <AppProvider>
-        {/* Animated Background Blobs */}
-        <div className="blob blob-primary"></div>
-        <div className="blob blob-secondary"></div>
-        <div className="blob blob-accent"></div>
+        {/* Animated Background Blobs Container */}
+        <div className="bg-blobs-container">
+          <div className="blob blob-primary"></div>
+          <div className="blob blob-secondary"></div>
+          <div className="blob blob-accent"></div>
+        </div>
 
         <MainLayout />
       </AppProvider>

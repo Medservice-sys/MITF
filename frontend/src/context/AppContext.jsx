@@ -20,6 +20,11 @@ export const AppProvider = ({ children }) => {
   const [allEvents, setAllEvents] = useState([]);
   const [devicesList, setDevicesList] = useState([]);
 
+  // Sidebar mobile toggle state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   // Modals & UI states
   const [helpCode, setHelpCode] = useState(null);
   const [showRoiModal, setShowRoiModal] = useState(false);
@@ -161,6 +166,10 @@ export const AppProvider = ({ children }) => {
         setUserModalData,
         contextMenu,
         setContextMenu,
+        isSidebarOpen,
+        setIsSidebarOpen,
+        toggleSidebar,
+        closeSidebar,
       }}
     >
       {children}
