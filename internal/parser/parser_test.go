@@ -294,3 +294,50 @@ func TestCsdErrorParser(t *testing.T) {
 	}
 }
 
+func TestPhilipsParsers(t *testing.T) {
+	t.Run("PhilipsLoggerParser", func(t *testing.T) {
+		p := &PhilipsLoggerParser{}
+		lines := []string{
+			"2026.07.28 13:31:34 HSS-ESTOP state activated on console panel",
+			"2026.07.28 13:32:00 COUCH HAS NO 230 AC main power",
+			"2026.07.28 13:33:00 MC_DEVICE_INVERTER_FAILURE rotation motor fault",
+		}
+		events := p.Parse(lines, "Logger.mdb")
+		if len(events) != 3 {
+			t.Fatalf("expected 3 events, got %d", len(events))
+		}
+		if events[0].Severity != "CRITICAL" || events[0].TCECode != "MITF.SAFETY.ESTOP_ACTIVATED" {
+			t.Errorf("unexpected event 0: %+v", events[0])
+		}
+		if events[1].Severity != "CRITICAL" || events[1].TCECode != "MITF.TABLE.COUCH_NO_230AC" {
+			t.Errorf("unexpected event 1: %+v", events[1])
+		}
+		if events[2].Severity != "CRITICAL" || events[2].TCECode != "MITF.GANTRY.INVERTER_FAILURE" {
+			t.Errorf("unexpected event 2: %+v", events[2])
+		}
+	})
+
+	t.Run("PhilipsUspLogParser", func(t *testing.T) {
+		p := &PhilipsUspLogParser{}
+		lines := []string{
+			"2026.07.28 13:31:34 DBServer can't open new table !",
+			"2026.07.28 13:31:36 uDStoreFastRebuild::justDoIt Error: while Fast Rebuild study- d:/tamar.data/data/S756690",
+			"2026.07.28 13:34:01 Error initialize Local DVD-RAM API",
+		}
+		events := p.Parse(lines, "usplognew.log")
+		if len(events) != 3 {
+			t.Fatalf("expected 3 events, got %d", len(events))
+		}
+		if events[0].Severity != "WARNING" || events[0].TCECode != "MITF.CONSOLE.LOGSERVER_DB_FULL" {
+			t.Errorf("unexpected event 0: %+v", events[0])
+		}
+		if events[1].Severity != "CRITICAL" || events[1].TCECode != "MITF.CONSOLE.DSTORE_REBUILD_ERROR" {
+			t.Errorf("unexpected event 1: %+v", events[1])
+		}
+		if events[2].Severity != "WARNING" || events[2].TCECode != "MITF.CONSOLE.OPTICAL_DRIVE_INIT_ERROR" {
+			t.Errorf("unexpected event 2: %+v", events[2])
+		}
+	})
+}
+
+

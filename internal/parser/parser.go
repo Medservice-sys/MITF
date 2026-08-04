@@ -546,6 +546,231 @@ func (p *DasToolHistParser) Parse(lines []string, source string) []models.Unifie
 	return events
 }
 
+// PhilipsLoggerParser handles Philips Logger.mdb / Logger.log events (Gantry, Inverter, Couch, ESTOP)
+type PhilipsLoggerParser struct{}
+
+func (p *PhilipsLoggerParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+	fallbackTS := time.Now()
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		ts := parseTimestamp(line)
+		if ts.IsZero() {
+			dateRegex := regexp.MustCompile(`(\d{4}[\./-]\d{2}[\./-]\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?)`)
+			if m := dateRegex.FindString(trimmed); m != "" {
+				mNorm := strings.ReplaceAll(m, ".", "-")
+				mNorm = strings.ReplaceAll(mNorm, "/", "-")
+				parsed, err := time.Parse("2006-01-02 15:04:05", strings.Split(mNorm, ".")[0])
+				if err == nil {
+					ts = parsed
+				}
+			}
+		}
+		if ts.IsZero() {
+			ts = fallbackTS
+		}
+
+		severity := "INFORMATIONAL"
+		subsystem := "gantry"
+		tceCode := "MITF.GANTRY.GENERIC"
+		upperLine := strings.ToUpper(trimmed)
+
+		if strings.Contains(upperLine, "HSS-ESTOP") || strings.Contains(upperLine, "ESTOP REASON") || strings.Contains(upperLine, "EMERGENCY STOP") {
+			severity = "CRITICAL"
+			subsystem = "safety"
+			tceCode = "MITF.SAFETY.ESTOP_ACTIVATED"
+		} else if strings.Contains(upperLine, "COUCH HAS NO 230 AC") || strings.Contains(upperLine, "COUCH_NO_230AC") {
+			severity = "CRITICAL"
+			subsystem = "table"
+			tceCode = "MITF.TABLE.COUCH_NO_230AC"
+		} else if strings.Contains(upperLine, "MC_DEVICE_INVERTER_FAILURE") || strings.Contains(upperLine, "INVERTER_FAILURE") {
+			severity = "CRITICAL"
+			subsystem = "gantry"
+			tceCode = "MITF.GANTRY.INVERTER_FAILURE"
+		} else if strings.Contains(upperLine, "DC LINK UNDERVOLTAGE") {
+			severity = "CRITICAL"
+			subsystem = "gantry"
+			tceCode = "MITF.GANTRY.DC_LINK_UNDERVOLTAGE"
+		} else if strings.Contains(upperLine, "SB FAULT") || strings.Contains(upperLine, "0X5000") || strings.Contains(upperLine, "SPIN BRAKE") {
+			severity = "CRITICAL"
+			subsystem = "gantry"
+			tceCode = "MITF.GANTRY.SPIN_BRAKE_FAULT"
+		} else if strings.Contains(upperLine, "MC_DEVICE_PS_FAILURE") || strings.Contains(upperLine, "PS_FAILURE") {
+			severity = "CRITICAL"
+			subsystem = "power"
+			tceCode = "MITF.POWER.SUPPLY_FAILURE"
+		} else if strings.Contains(upperLine, "TORQUE_TOO_HIGH") || strings.Contains(upperLine, "RMC_TORQUE") {
+			severity = "WARNING"
+			subsystem = "gantry"
+			tceCode = "MITF.GANTRY.RMC_TORQUE_TOO_HIGH"
+		} else if strings.Contains(upperLine, "FLOWSWITCH 0") || strings.Contains(upperLine, "FLOW_SWITCH") {
+			severity = "WARNING"
+			subsystem = "cooling"
+			tceCode = "MITF.COOLING.FLOW_SWITCH_ZERO"
+		} else if strings.Contains(upperLine, "ERROR") || strings.Contains(upperLine, "FATAL") || strings.Contains(upperLine, "AERROR") {
+			severity = "CRITICAL"
+		} else if strings.Contains(upperLine, "WARN") {
+			severity = "WARNING"
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: ts,
+			Severity:  severity,
+			Process:   "Logger.mdb",
+			Message:   cleanMessage(trimmed),
+			Source:    source,
+			Subsystem: subsystem,
+			TCECode:   tceCode,
+			Host:      "PHILIPS-247CEDB",
+		})
+	}
+	return events
+}
+
+// PhilipsUspLogParser handles usplog.log / usplognew.log events (LogServer, DStore, optical drive)
+type PhilipsUspLogParser struct{}
+
+func (p *PhilipsUspLogParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+	fallbackTS := time.Now()
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		ts := parseTimestamp(line)
+		if ts.IsZero() {
+			dateRegex := regexp.MustCompile(`(\d{4}[\./-]\d{2}[\./-]\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?)`)
+			if m := dateRegex.FindString(trimmed); m != "" {
+				mNorm := strings.ReplaceAll(m, ".", "-")
+				mNorm = strings.ReplaceAll(mNorm, "/", "-")
+				parsed, err := time.Parse("2006-01-02 15:04:05", strings.Split(mNorm, ".")[0])
+				if err == nil {
+					ts = parsed
+				}
+			}
+		}
+		if ts.IsZero() {
+			ts = fallbackTS
+		}
+
+		severity := "INFORMATIONAL"
+		subsystem := "console"
+		tceCode := "MITF.CONSOLE.GENERIC"
+		upperLine := strings.ToUpper(trimmed)
+
+		if strings.Contains(upperLine, "DBSERVER CAN'T OPEN NEW TABLE") || strings.Contains(upperLine, "LOGSERVER") {
+			severity = "WARNING"
+			subsystem = "console"
+			tceCode = "MITF.CONSOLE.LOGSERVER_DB_FULL"
+		} else if strings.Contains(upperLine, "UDSTOREFASTREBUILD") || strings.Contains(upperLine, "DSTORE") {
+			severity = "CRITICAL"
+			subsystem = "console"
+			tceCode = "MITF.CONSOLE.DSTORE_REBUILD_ERROR"
+		} else if strings.Contains(upperLine, "DVD-RAM API") || strings.Contains(upperLine, "EOD API") || strings.Contains(upperLine, "OPTICAL") {
+			severity = "WARNING"
+			subsystem = "console"
+			tceCode = "MITF.CONSOLE.OPTICAL_DRIVE_INIT_ERROR"
+		} else if strings.Contains(upperLine, "ERROR") || strings.Contains(upperLine, "FAIL") {
+			severity = "CRITICAL"
+		} else if strings.Contains(upperLine, "WARN") {
+			severity = "WARNING"
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: ts,
+			Severity:  severity,
+			Process:   "usplog",
+			Message:   cleanMessage(trimmed),
+			Source:    source,
+			Subsystem: subsystem,
+			TCECode:   tceCode,
+			Host:      "PHILIPS-247CEDB",
+		})
+	}
+	return events
+}
+
+// PhilipsShotsHistoryParser handles ShotsHistory.mdb exposure history
+type PhilipsShotsHistoryParser struct{}
+
+func (p *PhilipsShotsHistoryParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+	fallbackTS := time.Now()
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		ts := parseTimestamp(line)
+		if ts.IsZero() {
+			ts = fallbackTS
+		}
+
+		severity := "INFORMATIONAL"
+		subsystem := "tube"
+		tceCode := "MITF.TUBE.EXPOSURE_ACQUIRED"
+		upperLine := strings.ToUpper(trimmed)
+
+		if strings.Contains(upperLine, "NUMBEROFARCS") || strings.Contains(upperLine, "ARC DETECTED") {
+			severity = "WARNING"
+			tceCode = "MITF.TUBE.ARCS_DETECTED"
+		} else if strings.Contains(upperLine, "HEATUNITS") || strings.Contains(upperLine, "HEAT_LIMIT") {
+			severity = "WARNING"
+			tceCode = "MITF.TUBE.HEAT_LIMIT"
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: ts,
+			Severity:  severity,
+			Process:   "ShotsHistory.mdb",
+			Message:   cleanMessage(trimmed),
+			Source:    source,
+			Subsystem: subsystem,
+			TCECode:   tceCode,
+			Host:      "PHILIPS-247CEDB",
+		})
+	}
+	return events
+}
+
+// PhilipsReadMeVersionParser handles 00README.txt and CPMVersions.txt identification logs
+type PhilipsReadMeVersionParser struct{}
+
+func (p *PhilipsReadMeVersionParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+	fallbackTS := time.Now()
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: fallbackTS,
+			Severity:  "INFORMATIONAL",
+			Process:   "CPMVersions",
+			Message:   cleanMessage(trimmed),
+			Source:    source,
+			Subsystem: "console",
+			TCECode:   "MITF.CONSOLE.VERSION_INFO",
+			Host:      "PHILIPS-247CEDB",
+		})
+	}
+	return events
+}
+
+
 
 // Helper function to check if a string starts with a GE CT binary prefix
 func isBinaryPrefix(s string) bool {

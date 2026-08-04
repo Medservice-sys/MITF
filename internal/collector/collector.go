@@ -47,8 +47,9 @@ func isAllowedLogFileForBrand(fileName string, brand string, mode string) bool {
 		// Siemens logs (sysstate.log)
 		return strings.HasPrefix(fileName, "sysstate.log")
 	case "PHILIPS":
-		// Philips logs (csdErrorLog)
-		return fileName == "csdErrorLog"
+		// Philips CT logs (Logger.mdb/log, usplog, ShotsHistory, csdErrorLog, CPMVersions, 00README)
+		philipsRegex := regexp.MustCompile(`(?i)^(logger(\.mdb|\.log)?|usplog(new)?(\.log)?|shotshistory(\.mdb|\.log)?|tubehistoryinfo(\.mdb)?|00readme(\.txt)?|cpmversions(\.txt)?|usp\.version|stargate_errors(\.mdb)?|estopreasons(\.mdb)?|csderrorlog|csderror|philipseventlog(\.evt)?)$`)
+		return philipsRegex.MatchString(fileName) || strings.HasPrefix(strings.ToLower(fileName), "logger") || strings.HasPrefix(strings.ToLower(fileName), "usplog")
 	case "TOSHIBA", "HITACHI", "FUJIFILM":
 		// Toshiba / Hitachi / Fujifilm: basic logs or generic text logs
 		return strings.HasSuffix(fileName, ".log") || strings.HasSuffix(fileName, ".txt") || fileName == "error.log" || fileName == "status.log"

@@ -133,6 +133,20 @@ func loadClassificationsOnStartup() {
 				"MITF.COLLIMATOR.POSITION_ABORT": "CRITICAL",
 				"Svc_Notepad":                    "IGNORE",
 				"MITF.COOLING.FLUID_FLOW_ABORT":  "CRITICAL",
+				"MITF.TABLE.COUCH_NO_230AC":      "CRITICAL",
+				"MITF.GANTRY.INVERTER_FAILURE":   "CRITICAL",
+				"MITF.CONSOLE.LOGSERVER_DB_FULL": "WARNING",
+			},
+			"Philips CT (Stargate / Brilliance)": {
+				"MITF.SAFETY.ESTOP_ACTIVATED":        "CRITICAL",
+				"MITF.TABLE.COUCH_NO_230AC":          "CRITICAL",
+				"MITF.GANTRY.INVERTER_FAILURE":       "CRITICAL",
+				"MITF.GANTRY.DC_LINK_UNDERVOLTAGE":  "CRITICAL",
+				"MITF.GANTRY.SPIN_BRAKE_FAULT":       "CRITICAL",
+				"MITF.CONSOLE.LOGSERVER_DB_FULL":     "WARNING",
+				"MITF.CONSOLE.DSTORE_REBUILD_ERROR":  "CRITICAL",
+				"MITF.CONSOLE.OPTICAL_DRIVE_INIT_ERROR": "WARNING",
+				"MITF.TUBE.ARCS_DETECTED":            "WARNING",
 			},
 		}
 		saveClassifications()
@@ -212,7 +226,54 @@ func getProcessedEvents() []models.UnifiedLogEvent {
 			Host:      "Philips-Achieva",
 		}
 
-		events = append(events, siemensInfo1, siemensInfo2, siemensEv, philipsInfo, philipsEv)
+		// Injected Philips MedCheck 20260728 telemetry events (PHILIPS-247CEDB)
+		philipsMedCheckInfo := models.UnifiedLogEvent{
+			Timestamp: now.Add(-8 * time.Minute),
+			Severity:  "INFORMATIONAL",
+			Subsystem: "console",
+			Process:   "CPMVersions",
+			TCECode:   "MITF.CONSOLE.VERSION_INFO",
+			Message:   "Philips CT (PHILIPS-247CEDB) Console v2.3.0.1781 (Stargate 2 / Brilliance CT) online - Location: MMSIL, Haifa, MATAM",
+			Host:      "PHILIPS-247CEDB",
+		}
+		philipsCouchNo230AC := models.UnifiedLogEvent{
+			Timestamp: now.Add(-4 * time.Minute),
+			Severity:  "CRITICAL",
+			Subsystem: "table",
+			Process:   "Logger.mdb",
+			TCECode:   "MITF.TABLE.COUCH_NO_230AC",
+			Message:   "Logger.mdb: COUCH HAS NO 230 AC - Loss of 230V AC main power supply in patient support unit",
+			Host:      "PHILIPS-247CEDB",
+		}
+		philipsLogServerDbFull := models.UnifiedLogEvent{
+			Timestamp: now.Add(-3 * time.Minute),
+			Severity:  "WARNING",
+			Subsystem: "console",
+			Process:   "usplog",
+			TCECode:   "MITF.CONSOLE.LOGSERVER_DB_FULL",
+			Message:   "usplognew.log: DBServer can't open new table ! Logger.mdb database saturated at table 20",
+			Host:      "PHILIPS-247CEDB",
+		}
+		philipsDstoreRebuild := models.UnifiedLogEvent{
+			Timestamp: now.Add(-2 * time.Minute),
+			Severity:  "CRITICAL",
+			Subsystem: "console",
+			Process:   "usplog",
+			TCECode:   "MITF.CONSOLE.DSTORE_REBUILD_ERROR",
+			Message:   "usplognew.log: uDStoreFastRebuild::justDoIt Error: while Fast Rebuild study- d:/tamar.data/data/S756690",
+			Host:      "PHILIPS-247CEDB",
+		}
+		philipsInverterFailure := models.UnifiedLogEvent{
+			Timestamp: now.Add(-1 * time.Minute),
+			Severity:  "CRITICAL",
+			Subsystem: "gantry",
+			Process:   "Logger.mdb",
+			TCECode:   "MITF.GANTRY.INVERTER_FAILURE",
+			Message:   "Logger.mdb: MC_DEVICE_INVERTER_FAILURE - Gantry rotation motor traction inverter fault",
+			Host:      "PHILIPS-247CEDB",
+		}
+
+		events = append(events, siemensInfo1, siemensInfo2, siemensEv, philipsInfo, philipsEv, philipsMedCheckInfo, philipsCouchNo230AC, philipsLogServerDbFull, philipsDstoreRebuild, philipsInverterFailure)
 	}
 
 	// Inject dynamic tube warning/critical alarms based on specs (mAs/thermal limits)
@@ -233,8 +294,8 @@ func getProcessedEvents() []models.UnifiedLogEvent {
 		}
 		if ev.Host == "Siemens-MRI-Serv" {
 			modelKey = "Siemens Somatom"
-		} else if ev.Host == "Philips-Achieva" {
-			modelKey = "Philips Brilliance 64"
+		} else if ev.Host == "Philips-Achieva" || ev.Host == "PHILIPS-247CEDB" {
+			modelKey = "Philips CT (Stargate / Brilliance)"
 		}
 
 		var override string

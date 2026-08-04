@@ -76,6 +76,14 @@ func StartPollingEngine() {
 					p = &parser.CsdErrorParser{}
 				} else if strings.Contains(f.Name, "ssw.dastool.hist") {
 					p = &parser.DasToolHistParser{}
+				} else if strings.Contains(strings.ToLower(f.Name), "logger") || strings.Contains(strings.ToLower(f.Name), "estopreasons") || strings.Contains(strings.ToLower(f.Name), "stargate_errors") {
+					p = &parser.PhilipsLoggerParser{}
+				} else if strings.Contains(strings.ToLower(f.Name), "usplog") {
+					p = &parser.PhilipsUspLogParser{}
+				} else if strings.Contains(strings.ToLower(f.Name), "shotshistory") || strings.Contains(strings.ToLower(f.Name), "tubehistoryinfo") {
+					p = &parser.PhilipsShotsHistoryParser{}
+				} else if strings.Contains(strings.ToLower(f.Name), "00readme") || strings.Contains(strings.ToLower(f.Name), "cpmversions") || strings.Contains(strings.ToLower(f.Name), "usp.version") {
+					p = &parser.PhilipsReadMeVersionParser{}
 				} else {
 					// Skip files without a defined parser
 					continue
