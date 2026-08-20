@@ -25,6 +25,7 @@ import { AdminClassificationsView } from './views/AdminClassificationsView';
 import { UsersView } from './views/UsersView';
 import { FtpView } from './views/FtpView';
 import { SettingsView } from './views/SettingsView';
+import { PhilipsAnalyzerView } from './views/PhilipsAnalyzerView';
 
 const MainLayout = () => {
   const { activeView } = useApp();
@@ -61,6 +62,8 @@ const MainLayout = () => {
         return <UsersView />;
       case 'ftp':
         return <FtpView />;
+      case 'philips-analyzer':
+        return <PhilipsAnalyzerView />;
       case 'settings':
         return <SettingsView />;
       default:

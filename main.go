@@ -65,6 +65,7 @@ func main() {
 	http.HandleFunc("/api/knowledge", api.HandleKnowledge)
 	http.HandleFunc("/api/dicom/stations", api.HandleDicomStations)
 	http.HandleFunc("/api/dicom/ping", api.HandleDicomPing)
+	http.HandleFunc("/api/logs/philips/upload", api.HandlePhilipsUpload)
 
 	// FTP Ingestion Endpoints
 	http.HandleFunc("/api/ftp/status", api.HandleFTPStatus)
