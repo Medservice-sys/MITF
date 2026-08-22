@@ -34,8 +34,11 @@ ChartJS.register(
   Legend
 );
 
+import { MriDashboardView } from './MriDashboardView';
+
 export const DashboardView = () => {
   const {
+    selectedModality,
     latestMetrics,
     allEvents,
     setActiveView,
@@ -43,6 +46,10 @@ export const DashboardView = () => {
     setHelpCode,
     setContextMenu,
   } = useApp();
+
+  if (selectedModality === 'MRI') {
+    return <MriDashboardView />;
+  }
 
   const [searchQuery, setSearchQuery] = useState('');
   const [miniSeverity, setMiniSeverity] = useState('ALL');

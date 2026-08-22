@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 export const Sidebar = () => {
-  const { activeView, setActiveView, isBackendOnline, isSidebarOpen, closeSidebar } = useApp();
+  const { activeView, setActiveView, selectedModality, isBackendOnline, isSidebarOpen, closeSidebar } = useApp();
   const { userRole, userFullName, logout } = useAuth();
 
   const handleNavClick = (viewId) => {
@@ -106,14 +106,31 @@ export const Sidebar = () => {
             <span>Árbol YANG</span>
           </button>
 
-          <div className="nav-category">DIAGNÓSTICO</div>
-          <button
-            className={`nav-item ${activeView === 'hardware' ? 'active' : ''}`}
-            onClick={() => handleNavClick('hardware')}
-          >
-            <HardDrive />
-            <span>Hardware CT</span>
-          </button>
+          <div className="nav-category">
+            {selectedModality === 'MRI' ? 'DIAGNÓSTICO RESONADOR' : 'DIAGNÓSTICO TOMÓGRAFO'}
+          </div>
+
+          {selectedModality === 'MRI' ? (
+            <>
+              <button
+                className={`nav-item ${activeView === 'hardware' || activeView === 'mri-hardware' ? 'active' : ''}`}
+                onClick={() => handleNavClick('hardware')}
+              >
+                <HardDrive />
+                <span>Métricas Criogenia / Imán</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className={`nav-item ${activeView === 'hardware' ? 'active' : ''}`}
+                onClick={() => handleNavClick('hardware')}
+              >
+                <HardDrive />
+                <span>Hardware CT</span>
+              </button>
+            </>
+          )}
 
           <button
             className={`nav-item ${activeView === 'alerts' ? 'active' : ''}`}
@@ -131,13 +148,15 @@ export const Sidebar = () => {
             <span>DICOM / Red</span>
           </button>
 
-          <button
-            className={`nav-item ${activeView === 'philips-analyzer' ? 'active' : ''}`}
-            onClick={() => handleNavClick('philips-analyzer')}
-          >
-            <FileSearch />
-            <span>Analizador Philips</span>
-          </button>
+          {selectedModality === 'CT' && (
+            <button
+              className={`nav-item ${activeView === 'philips-analyzer' ? 'active' : ''}`}
+              onClick={() => handleNavClick('philips-analyzer')}
+            >
+              <FileSearch />
+              <span>Analizador Philips</span>
+            </button>
+          )}
 
           <div className="nav-category">OPERATIVA</div>
           <button

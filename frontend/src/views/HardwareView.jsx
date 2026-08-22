@@ -3,8 +3,14 @@ import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { HardDrive, Save, HelpCircle, Ticket, Activity } from 'lucide-react';
 
+import { HardwareMriView } from './HardwareMriView';
+
 export const HardwareView = () => {
-  const { allEvents, latestMetrics, refreshData, showToast, setHelpCode, setContextMenu } = useApp();
+  const { selectedModality, allEvents, latestMetrics, refreshData, showToast, setHelpCode, setContextMenu } = useApp();
+
+  if (selectedModality === 'MRI') {
+    return <HardwareMriView />;
+  }
   const { userRole } = useAuth();
 
   const [tubeModels, setTubeModels] = useState([]);

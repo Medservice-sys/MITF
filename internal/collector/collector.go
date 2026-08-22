@@ -34,8 +34,8 @@ func isAllowedLogFileForBrand(fileName string, brand string, mode string) bool {
 	
 	switch brand {
 	case "GE":
-		// GE Basic logs: allowed in both online and service modes
-		geBasicRegex := regexp.MustCompile(`^(gesys_aurct\.log|scanmgr\.stdout\.log|scanmgr\.stderr\.log|scanmgr\.timers\.log|recon_control\.stdout\.log|recon_control\.timers\.log|dataacq\.stats\.log|dataacq\.stderr\.log|dataacq\.stdout\.log|dataacq\.timers\.log)$`)
+		// GE CT & MRI logs: allowed in both online and service modes
+		geBasicRegex := regexp.MustCompile(`(?i)^(gesys_.*\.log|scanmgr\..*\.log|recon_control\..*\.log|dataacq\..*\.log|hart_.*\.log|system_health\.log|tir\.log.*|gradient\.log|autotable\.log|mxtracefile\.log.*|psc\.log|coilid\.log|csderrorlog)$`)
 		if geBasicRegex.MatchString(fileName) {
 			return true
 		}

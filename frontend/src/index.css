@@ -139,9 +139,7 @@ body {
 .logo-area h2 {
     font-size: 1.3rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #fff 30%, var(--primary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #ffffff;
 }
 
 .logo-version {
@@ -374,7 +372,7 @@ select.glass-input {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--accent));
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;

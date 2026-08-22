@@ -141,7 +141,7 @@ export const HelpModal = () => {
           <button
             className="btn"
             style={{
-              background: 'linear-gradient(135deg, var(--primary), #0099ff)',
+              background: 'var(--primary)',
               color: '#000',
               display: 'flex',
               alignItems: 'center',

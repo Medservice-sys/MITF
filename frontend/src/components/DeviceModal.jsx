@@ -6,6 +6,7 @@ export const DeviceModal = () => {
   const { deviceModalData, setDeviceModalData, devicesList, operationMode, refreshInterval, refreshData, showToast } = useApp();
 
   const [name, setName] = useState('');
+  const [modality, setModality] = useState('CT');
   const [brand, setBrand] = useState('GE');
   const [host, setHost] = useState('');
   const [port, setPort] = useState(22);
@@ -18,6 +19,7 @@ export const DeviceModal = () => {
   useEffect(() => {
     if (deviceModalData && typeof deviceModalData === 'object' && deviceModalData.id) {
       setName(deviceModalData.name || '');
+      setModality(deviceModalData.modality || 'CT');
       setBrand(deviceModalData.brand || 'GE');
       setHost(deviceModalData.host || '');
       setPort(deviceModalData.port || 22);
@@ -28,6 +30,7 @@ export const DeviceModal = () => {
       setActive(deviceModalData.active !== false);
     } else {
       setName('');
+      setModality('CT');
       setBrand('GE');
       setHost('');
       setPort(22);
@@ -58,6 +61,7 @@ export const DeviceModal = () => {
           return {
             ...d,
             name,
+            modality,
             brand,
             host,
             port: parseInt(port, 10) || 22,
@@ -74,6 +78,7 @@ export const DeviceModal = () => {
       updatedDevices.push({
         id: 'ne-' + Date.now(),
         name,
+        modality,
         brand,
         host,
         port: parseInt(port, 10) || 22,
@@ -130,7 +135,7 @@ export const DeviceModal = () => {
 
         <form onSubmit={handleSave}>
           <div className="modal-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: 4, display: 'block' }}>
                   Nombre del Equipo *
@@ -141,9 +146,30 @@ export const DeviceModal = () => {
                   style={{ width: '100%' }}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ej. Tomógrafo Sala 1"
+                  placeholder={modality === 'MRI' ? 'Ej. Resonador 1.5T' : 'Ej. Tomógrafo Sala 1'}
                   required
                 />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: 4, display: 'block' }}>
+                  Modalidad *
+                </label>
+                <select
+                  className="glass-input"
+                  style={{ width: '100%' }}
+                  value={modality}
+                  onChange={(e) => {
+                    const newMod = e.target.value;
+                    setModality(newMod);
+                    if (newMod === 'MRI' && remoteLogDir === '/usr/g/service/log') {
+                      setRemoteLogDir('/usr/g/service/log');
+                    }
+                  }}
+                >
+                  <option value="CT">Tomógrafo (CT)</option>
+                  <option value="MRI">Resonador (MRI)</option>
+                </select>
               </div>
 
               <div>
@@ -159,6 +185,7 @@ export const DeviceModal = () => {
                   <option value="GE">GE Healthcare</option>
                   <option value="Siemens">Siemens Healthineers</option>
                   <option value="Philips">Philips Healthcare</option>
+                  <option value="Toshiba">Canon / Toshiba</option>
                 </select>
               </div>
             </div>

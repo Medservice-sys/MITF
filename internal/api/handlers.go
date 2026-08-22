@@ -21,6 +21,7 @@ func HandleData(w http.ResponseWriter, r *http.Request) {
 	severity := r.URL.Query().Get("severity")
 	process := r.URL.Query().Get("process")
 	deviceID := r.URL.Query().Get("deviceId")
+	modality := r.URL.Query().Get("modality")
 
 	events := getProcessedEvents()
 	fromTime, toTime, hasRange := parseDateRange(r, events)
@@ -28,6 +29,9 @@ func HandleData(w http.ResponseWriter, r *http.Request) {
 	var filtered []models.UnifiedLogEvent
 	for _, ev := range events {
 		if !matchDevice(deviceID, ev) {
+			continue
+		}
+		if modality != "" && ev.Modality != "" && !strings.EqualFold(ev.Modality, modality) {
 			continue
 		}
 		if hasRange && !fromTime.IsZero() && ev.Timestamp.Before(fromTime) {

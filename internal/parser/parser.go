@@ -28,6 +28,12 @@ func resolveMITFFields(geCode string, fallbackSubsystem string) (string, string)
 		return "table", "MITF.TABLE.UNCOMMANDED_MOTION"
 	case "200180011":
 		return "console", "MITF.CONSOLE.DOSE_DB_ERROR"
+	case "4026", "2227566":
+		return "magnet", "MITF.MAGNET.STATUS_CHECK"
+	case "10096":
+		return "cryo", "MITF.CRYO.HELIUM_MONITOR"
+	case "30097":
+		return "thermal", "MITF.THERMAL.INTERLOCK"
 	}
 
 	// 2. Class prefix mappings
@@ -46,7 +52,7 @@ func resolveMITFFields(geCode string, fallbackSubsystem string) (string, string)
 	return sub, "MITF." + strings.ToUpper(sub) + ".GENERIC"
 }
 
-// GesysParser handles gesys_aurct.log files
+// GesysParser handles gesys_aurct.log and gesys_lx-mr.log files
 type GesysParser struct{}
 
 func (p *GesysParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
@@ -54,6 +60,12 @@ func (p *GesysParser) Parse(lines []string, source string) []models.UnifiedLogEv
 	var inBlock bool
 	var currentEvent *models.UnifiedLogEvent
 	var messageLines []string
+
+	modality := "CT"
+	lowerSource := strings.ToLower(source)
+	if strings.Contains(lowerSource, "lx-mr") || strings.Contains(lowerSource, "resonador") || strings.Contains(lowerSource, "mr") {
+		modality = "MRI"
+	}
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
@@ -69,6 +81,7 @@ func (p *GesysParser) Parse(lines []string, source string) []models.UnifiedLogEv
 				Process:   "SYSTEM", // Default if not found
 				Subsystem: "console",
 				TCECode:   "MITF.CONSOLE.GENERIC",
+				Modality:  modality,
 			}
 			messageLines = []string{}
 			continue
@@ -824,4 +837,162 @@ func cleanMessage(msg string) string {
 		}
 	}
 	return strings.TrimSpace(sb.String())
+}
+
+// HartHistoryParser handles HART_History.log and HART_CurrentStatus.log (Cryo/Helium/Magnet)
+type HartHistoryParser struct{}
+
+func (p *HartHistoryParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+	fallbackTS := time.Now()
+
+	for _, line := range lines {
+		trimmed := cleanMessage(line)
+		if trimmed == "" || len(trimmed) < 4 {
+			continue
+		}
+
+		severity := "INFORMATIONAL"
+		lowerLine := strings.ToLower(trimmed)
+		if strings.Contains(lowerLine, "error") || strings.Contains(lowerLine, "critical") || strings.Contains(lowerLine, "fail") || strings.Contains(lowerLine, "pressure high") {
+			severity = "SEVERE_ERROR"
+		} else if strings.Contains(lowerLine, "warn") || strings.Contains(lowerLine, "low helium") {
+			severity = "WARNING"
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: fallbackTS,
+			Severity:  severity,
+			Process:   "HART_MONITOR",
+			Message:   trimmed,
+			Source:    source,
+			Subsystem: "cryo",
+			TCECode:   "MITF.CRYO.STATUS",
+			Modality:  "MRI",
+		})
+	}
+	return events
+}
+
+// SystemHealthMriParser handles system_health.log (MRI health checks, magnet, bore temp, gradient)
+type SystemHealthMriParser struct{}
+
+func (p *SystemHealthMriParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+	fallbackTS := time.Now()
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		severity := "INFORMATIONAL"
+		if strings.Contains(trimmed, "FAIL") || strings.Contains(trimmed, "ERROR") {
+			severity = "SEVERE_ERROR"
+		} else if strings.Contains(trimmed, "WARN") {
+			severity = "WARNING"
+		}
+
+		subsystem := "magnet"
+		if strings.Contains(trimmed, "boreTemp") {
+			subsystem = "bore"
+		} else if strings.Contains(trimmed, "Grad") {
+			subsystem = "gradient"
+		} else if strings.Contains(trimmed, "RF amp") {
+			subsystem = "rf_amp"
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: fallbackTS,
+			Severity:  severity,
+			Process:   "SYS_HEALTH_CHECK",
+			Message:   cleanMessage(trimmed),
+			Source:    source,
+			Subsystem: subsystem,
+			TCECode:   "MITF.HEALTH." + strings.ToUpper(subsystem),
+			Modality:  "MRI",
+		})
+	}
+	return events
+}
+
+// TirMriParser handles TIR.log (Thermal / Interlock / Resonator logs)
+type TirMriParser struct{}
+
+func (p *TirMriParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+	fallbackTS := time.Now()
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		severity := "INFORMATIONAL"
+		lowerLine := strings.ToLower(trimmed)
+		if strings.Contains(lowerLine, "err") || strings.Contains(lowerLine, "fail") || strings.Contains(lowerLine, "lockout") {
+			severity = "SEVERE_ERROR"
+		} else if strings.Contains(lowerLine, "warn") || strings.Contains(lowerLine, "interlock") {
+			severity = "WARNING"
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: fallbackTS,
+			Severity:  severity,
+			Process:   "TIR_THERMAL",
+			Message:   cleanMessage(trimmed),
+			Source:    source,
+			Subsystem: "thermal",
+			TCECode:   "MITF.THERMAL.INTERLOCK",
+			Modality:  "MRI",
+		})
+	}
+	return events
+}
+
+// GenericGELogParser handles Gradient.log, AutoTable.log, MxTraceFile.log, etc.
+type GenericGELogParser struct{}
+
+func (p *GenericGELogParser) Parse(lines []string, source string) []models.UnifiedLogEvent {
+	var events []models.UnifiedLogEvent
+	fallbackTS := time.Now()
+
+	subsystem := "console"
+	lowerSource := strings.ToLower(source)
+	if strings.Contains(lowerSource, "gradient") {
+		subsystem = "gradient"
+	} else if strings.Contains(lowerSource, "table") {
+		subsystem = "table"
+	} else if strings.Contains(lowerSource, "coil") {
+		subsystem = "rf_amp"
+	}
+
+	for _, line := range lines {
+		trimmed := cleanMessage(line)
+		if trimmed == "" {
+			continue
+		}
+
+		severity := "INFORMATIONAL"
+		lowerLine := strings.ToLower(trimmed)
+		if strings.Contains(lowerLine, "err") || strings.Contains(lowerLine, "fail") {
+			severity = "SEVERE_ERROR"
+		} else if strings.Contains(lowerLine, "warn") {
+			severity = "WARNING"
+		}
+
+		events = append(events, models.UnifiedLogEvent{
+			Timestamp: fallbackTS,
+			Severity:  severity,
+			Process:   strings.ToUpper(subsystem),
+			Message:   trimmed,
+			Source:    source,
+			Subsystem: subsystem,
+			TCECode:   "MITF." + strings.ToUpper(subsystem) + ".EVENT",
+			Modality:  "MRI",
+		})
+	}
+	return events
 }

@@ -60,8 +60,16 @@ func StartPollingEngine() {
 			for _, f := range contents {
 				var p parser.LogParser
 
-				if strings.Contains(f.Name, "gesys_aurct") {
+				if strings.Contains(f.Name, "gesys") {
 					p = &parser.GesysParser{}
+				} else if strings.Contains(f.Name, "HART") {
+					p = &parser.HartHistoryParser{}
+				} else if strings.Contains(f.Name, "system_health") {
+					p = &parser.SystemHealthMriParser{}
+				} else if strings.Contains(f.Name, "TIR") {
+					p = &parser.TirMriParser{}
+				} else if strings.Contains(f.Name, "Gradient") || strings.Contains(f.Name, "AutoTable") || strings.Contains(f.Name, "MxTrace") {
+					p = &parser.GenericGELogParser{}
 				} else if strings.Contains(f.Name, "scanmgr") {
 					p = &parser.ScanMgrParser{}
 				} else if strings.Contains(f.Name, "device_eventlog") {

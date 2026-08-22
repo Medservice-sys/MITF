@@ -53,6 +53,7 @@ func main() {
 	http.HandleFunc("/api/health", api.HandleHealth)
 	http.HandleFunc("/api/fleet", api.HandleFleet)
 	http.HandleFunc("/api/dashboard", api.HandleDashboard)
+	http.HandleFunc("/api/mri/metrics", api.HandleMriMetrics)
 
 	// New MITF features endpoints
 	http.HandleFunc("/api/admin/classifications", api.HandleAdminClassifications)

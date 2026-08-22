@@ -18,6 +18,26 @@ type UnifiedLogEvent struct {
 	TicketID    string    `json:"ticketId,omitempty"`  // Linked ticket ID if any
 	TicketStatus string   `json:"ticketStatus,omitempty"` // Linked ticket status if any
 	DeviceID    string    `json:"deviceId,omitempty"`  // Originating device ID
+	Modality    string    `json:"modality,omitempty"`  // "CT" or "MRI"
+}
+
+// MRITelemetry contains aggregated metrics specific to MRI Resonators.
+type MRITelemetry struct {
+	HeliumLevelPercent float64 `json:"heliumLevelPercent"`
+	MagnetPressure     float64 `json:"magnetPressure"`
+	MagnetField        string  `json:"magnetField"`
+	MagnetSerial       string  `json:"magnetSerial"`
+	MagnetRampStatus   string  `json:"magnetRampStatus"`
+	GradientRiseTime   int     `json:"gradientRiseTime"`
+	GradientAmpType    string  `json:"gradientAmpType"`
+	RFAmpType          string  `json:"rfAmpType"`
+	MaxBandwidthkHz    float64 `json:"maxBandwidthkHz"`
+	BoreTempLevel1     float64 `json:"boreTempLevel1"`
+	BoreTempLevel2     float64 `json:"boreTempLevel2"`
+	ActiveTirInterlocks int    `json:"activeTirInterlocks"`
+	MriHealthScore     float64 `json:"mriHealthScore"`
+	HospitalName       string  `json:"hospitalName,omitempty"`
+	SWRevision         string  `json:"swRevision,omitempty"`
 }
 
 // YangNode represents a hierarchical tree structure for YANG configuration.
@@ -84,6 +104,7 @@ type DeviceProfile struct {
 	User         string `json:"user"`
 	Password     string `json:"password"`
 	Brand        string `json:"brand"`        // "GE", "Philips", "Siemens", "Toshiba", "Hitachi"
+	Modality     string `json:"modality,omitempty"`  // "CT" or "MRI"
 	RemoteLogDir string `json:"remoteLogDir"`
 	SSHMode      string `json:"sshMode"`      // "modern" or "legacy"
 	Active       bool   `json:"active"`

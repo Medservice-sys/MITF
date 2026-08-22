@@ -69,9 +69,7 @@ export const LoginOverlay = () => {
             style={{
               fontSize: '1.6rem',
               fontWeight: 800,
-              background: 'linear-gradient(135deg, #fff 30%, var(--primary))',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: '#ffffff',
             }}
           >
             MITF - TOM

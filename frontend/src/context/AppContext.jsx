@@ -15,6 +15,14 @@ export const AppProvider = ({ children }) => {
 
   const [isLoadingData, setIsLoadingData] = useState(false);
 
+  const [selectedModality, setSelectedModalityState] = useState(() => localStorage.getItem('mitf-selected-modality') || 'CT');
+  const [mriMetrics, setMriMetrics] = useState(null);
+
+  const setSelectedModality = (mod) => {
+    setSelectedModalityState(mod);
+    localStorage.setItem('mitf-selected-modality', mod);
+  };
+
   // Data states
   const [latestMetrics, setLatestMetrics] = useState(null);
   const [allEvents, setAllEvents] = useState([]);
@@ -62,10 +70,11 @@ export const AppProvider = ({ children }) => {
       if (dateRange && dateRange !== 'all') params.append('range', dateRange);
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
+      if (selectedModality) params.append('modality', selectedModality);
 
       const queryString = params.toString() ? `?${params.toString()}` : '';
 
-      // 3. Fetch metrics
+      // 3. Fetch metrics (CT & general)
       const metricsRes = await fetch(`/api/metrics${queryString}`);
       if (metricsRes.ok) {
         const metrics = await metricsRes.json();
@@ -75,7 +84,18 @@ export const AppProvider = ({ children }) => {
         setIsBackendOnline(false);
       }
 
-      // 4. Fetch telemetry log events
+      // 4. Fetch MRI metrics
+      try {
+        const mriRes = await fetch('/api/mri/metrics');
+        if (mriRes.ok) {
+          const mriData = await mriRes.json();
+          setMriMetrics(mriData);
+        }
+      } catch (e) {
+        console.error("MRI Metrics fetch error:", e);
+      }
+
+      // 5. Fetch telemetry log events
       const eventsRes = await fetch(`/api/data${queryString}`);
       if (eventsRes.ok) {
         const events = await eventsRes.json();
@@ -87,7 +107,7 @@ export const AppProvider = ({ children }) => {
     } finally {
       setIsLoadingData(false);
     }
-  }, [selectedDevice, dateRange, startDate, endDate]);
+  }, [selectedDevice, dateRange, startDate, endDate, selectedModality]);
 
   // Interval timer for countdown & refresh
   useEffect(() => {
@@ -150,6 +170,9 @@ export const AppProvider = ({ children }) => {
         timeLeft,
         isBackendOnline,
         isLoadingData,
+        selectedModality,
+        setSelectedModality,
+        mriMetrics,
         latestMetrics,
         allEvents,
         devicesList,

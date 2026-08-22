@@ -201,8 +201,16 @@ func ProcessFTPLogs() (int, error) {
 
 		var p parser.LogParser
 
-		if strings.Contains(fileName, "gesys_aurct") {
+		if strings.Contains(fileName, "gesys") {
 			p = &parser.GesysParser{}
+		} else if strings.Contains(fileName, "HART") {
+			p = &parser.HartHistoryParser{}
+		} else if strings.Contains(fileName, "system_health") {
+			p = &parser.SystemHealthMriParser{}
+		} else if strings.Contains(fileName, "TIR") {
+			p = &parser.TirMriParser{}
+		} else if strings.Contains(fileName, "Gradient") || strings.Contains(fileName, "AutoTable") || strings.Contains(fileName, "MxTrace") {
+			p = &parser.GenericGELogParser{}
 		} else if strings.Contains(fileName, "scanmgr") {
 			p = &parser.ScanMgrParser{}
 		} else if strings.Contains(fileName, "device_eventlog") {

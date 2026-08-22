@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { RefreshCw, Sliders, Calendar, Server, Loader2, Menu } from 'lucide-react';
+import { RefreshCw, Sliders, Calendar, Server, Loader2, Menu, Activity, Zap } from 'lucide-react';
 
 const viewTitles = {
-  dashboard: { title: 'Dashboard Principal', subtitle: 'Vista general del estado de salud del tomógrafo GE CT' },
+  dashboard: { title: 'Dashboard Principal', subtitle: 'Vista general del estado del equipo médico' },
   logs: { title: 'Explorador de Logs Consolidado', subtitle: 'Búsqueda avanzada y filtrado de eventos de telemetría' },
   history: { title: 'Historial Consolidado', subtitle: 'Agrupación temporal de eventos y alertas' },
   tsm: { title: 'Taxonomía de Mantenimiento TSM', subtitle: 'Catálogo de subsistemas y componentes físicos' },
@@ -11,10 +11,10 @@ const viewTitles = {
   hardware: { title: 'Desgaste de Hardware CT', subtitle: 'Métricas de tubo mAs, rotaciones de gantry y filamentos' },
   alerts: { title: 'Alertas Tempranas & Predictivas', subtitle: 'Eventos críticos y advertencias operativas' },
   dicom: { title: 'Red & Estaciones DICOM', subtitle: 'Pruebas C-ECHO y estado de colectores DICOM' },
-  bitacora: { title: 'Bitácora &Tickets de Campo', subtitle: 'Asignación, gestión y resolución de fallas' },
+  bitacora: { title: 'Bitácora & Tickets de Campo', subtitle: 'Asignación, gestión y resolución de fallas' },
   acknowledges: { title: 'Alertas Reconocidas (ACK)', subtitle: 'Registro de alarmas confirmadas y filtradas' },
-  maintenance: { title: 'Calentamientos & Warm-up', subtitle: 'Control de rutinas de calentamiento de tubo' },
-  stops: { title: 'Fallas Agrupadas & Abortos', subtitle: 'Monitoreo de interrupciones de escaneo' },
+  maintenance: { title: 'Calentamientos & Warm-up', subtitle: 'Control de rutinas de calentamiento' },
+  stops: { title: 'Fallas Agrupadas & Abortos', subtitle: 'Monitoreo de interrupciones del equipo' },
   'admin-classifications': { title: 'Clasificación de Alertas', subtitle: 'Administración de overrides y severidades de catálogo' },
   users: { title: 'Gestión de Usuarios & Roles', subtitle: 'Control de cuentas, roles y asignación de equipos' },
   ftp: { title: 'Ingesta de Archivos FTP', subtitle: 'Carga manual y monitoreo de watcher de archivos de log' },
@@ -26,6 +26,8 @@ export const Header = () => {
     activeView,
     selectedDevice,
     setSelectedDevice,
+    selectedModality,
+    setSelectedModality,
     dateRange,
     setDateRange,
     startDate,
@@ -78,6 +80,55 @@ export const Header = () => {
       </div>
 
       <div className="header-controls">
+        {/* Modality Selector (CT vs MRI) */}
+        <div style={{ display: 'flex', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '3px', gap: '2px' }}>
+          <button
+            onClick={() => setSelectedModality('CT')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              background: selectedModality === 'CT' ? '#0284c7' : 'transparent',
+              color: selectedModality === 'CT' ? '#fff' : 'var(--text-dim)',
+              boxShadow: selectedModality === 'CT' ? '0 2px 8px rgba(2, 132, 199, 0.4)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+            title="Ver Tomografía Computada (CT)"
+          >
+            <Activity style={{ width: 13, height: 13 }} />
+            <span>Tomógrafo (CT)</span>
+          </button>
+
+          <button
+            onClick={() => setSelectedModality('MRI')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              background: selectedModality === 'MRI' ? '#8b5cf6' : 'transparent',
+              color: selectedModality === 'MRI' ? '#fff' : 'var(--text-dim)',
+              boxShadow: selectedModality === 'MRI' ? '0 2px 8px rgba(236, 72, 153, 0.4)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+            title="Ver Resonador Magnético (MRI)"
+          >
+            <Zap style={{ width: 13, height: 13 }} />
+            <span>Resonador (MRI)</span>
+          </button>
+        </div>
+
         {/* Device selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
           {isLoadingData ? (
