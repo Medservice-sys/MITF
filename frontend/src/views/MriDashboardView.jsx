@@ -13,6 +13,10 @@ import {
   Cpu,
   Layers,
   HelpCircle,
+  Snowflake,
+  Magnet,
+  Radio,
+  Lock,
 } from 'lucide-react';
 
 export const MriDashboardView = () => {
@@ -175,7 +179,7 @@ export const MriDashboardView = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>Criogenia / Nivel Helio</span>
-            <span style={{ fontSize: '1.2rem' }}>❄️</span>
+            <Snowflake style={{ width: 20, height: 20, color: '#38bdf8' }} />
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#38bdf8' }}>{heliumPercent}%</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
@@ -194,7 +198,7 @@ export const MriDashboardView = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>Imán Superconductor</span>
-            <span style={{ fontSize: '1.2rem' }}>🧲</span>
+            <Magnet style={{ width: 20, height: 20, color: '#a855f7' }} />
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#a855f7' }}>{magnetField}</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
@@ -210,7 +214,7 @@ export const MriDashboardView = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>Amplif. Gradientes</span>
-            <span style={{ fontSize: '1.2rem' }}>⚡</span>
+            <Zap style={{ width: 20, height: 20, color: '#f59e0b' }} />
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#f59e0b' }}>{gradientRiseTime} µs</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
@@ -226,7 +230,7 @@ export const MriDashboardView = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>Amplif. RF / Bandwidth</span>
-            <span style={{ fontSize: '1.2rem' }}>📡</span>
+            <Radio style={{ width: 20, height: 20, color: '#10b981' }} />
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#10b981' }}>{bwkHz} kHz</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
@@ -242,7 +246,7 @@ export const MriDashboardView = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>Temperatura Bore</span>
-            <span style={{ fontSize: '1.2rem' }}>🌡️</span>
+            <Thermometer style={{ width: 20, height: 20, color: '#ec4899' }} />
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#ec4899' }}>{temp1}°C / {temp2}°C</div>
           <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
@@ -258,7 +262,7 @@ export const MriDashboardView = () => {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>Interlocks Térmicos (TIR)</span>
-            <span style={{ fontSize: '1.2rem' }}>🔒</span>
+            <Lock style={{ width: 20, height: 20, color: '#10b981' }} />
           </div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: activeTirCount === 0 ? '#10b981' : '#ef4444' }}>
             {activeTirCount} Activos
@@ -313,28 +317,28 @@ export const MriDashboardView = () => {
             {/* 1. Criogenia / Helium Vessel */}
             <g onClick={() => setActiveComponent('cryo')} style={{ cursor: 'pointer' }}>
               <rect x="270" y="55" width="120" height="40" rx="6" fill="#0284c7" stroke="#38bdf8" strokeWidth="2" />
-              <text x="330" y="75" fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle">❄️ Criogenia</text>
+              <text x="330" y="75" fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle">Criogenia</text>
               <text x="330" y="88" fill="#e0f2fe" fontSize="10" textAnchor="middle">Helio: {heliumPercent}%</text>
             </g>
 
             {/* 2. Gradient Coils */}
             <g onClick={() => setActiveComponent('gradient')} style={{ cursor: 'pointer' }}>
               <rect x="510" y="55" width="120" height="40" rx="6" fill="#d97706" stroke="#f59e0b" strokeWidth="2" />
-              <text x="570" y="75" fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle">⚡ Gradientes</text>
+              <text x="570" y="75" fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle">Gradientes</text>
               <text x="570" y="88" fill="#fef3c7" fontSize="10" textAnchor="middle">{gradientRiseTime} µs (PASS)</text>
             </g>
 
             {/* 3. RF Transceiver */}
             <g onClick={() => setActiveComponent('rf')} style={{ cursor: 'pointer' }}>
               <rect x="270" y="225" width="120" height="40" rx="6" fill="#059669" stroke="#10b981" strokeWidth="2" />
-              <text x="330" y="245" fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle">📡 RF Body Coil</text>
+              <text x="330" y="245" fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle">RF Body Coil</text>
               <text x="330" y="258" fill="#d1fae5" fontSize="10" textAnchor="middle">BW: {bwkHz} kHz</text>
             </g>
 
             {/* 4. Bore Sensor / TIR */}
             <g onClick={() => setActiveComponent('bore')} style={{ cursor: 'pointer' }}>
               <rect x="510" y="225" width="120" height="40" rx="6" fill="#db2777" stroke="#ec4899" strokeWidth="2" />
-              <text x="570" y="245" fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle">🌡️ Sensores Bore</text>
+              <text x="570" y="245" fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle">Sensores Bore</text>
               <text x="570" y="258" fill="#fce7f3" fontSize="10" textAnchor="middle">{temp1}°C / {temp2}°C</text>
             </g>
 

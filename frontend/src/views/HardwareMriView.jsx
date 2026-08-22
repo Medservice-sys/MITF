@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { HardDrive, Activity, Zap, Thermometer, ShieldCheck, CheckCircle2, AlertTriangle, Save } from 'lucide-react';
+import { HardDrive, Activity, Zap, Thermometer, ShieldCheck, CheckCircle2, AlertTriangle, Save, Snowflake } from 'lucide-react';
 
 export const HardwareMriView = () => {
   const { mriMetrics, showToast } = useApp();
@@ -50,7 +50,7 @@ export const HardwareMriView = () => {
         {/* Magnet & Cryo Details */}
         <div className="glass-panel" style={{ padding: '20px', borderRadius: '12px' }}>
           <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 16px 0', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>❄️</span> Subsistema Criogénico & Imán
+            <Snowflake style={{ width: 18, height: 18, color: '#38bdf8' }} /> Subsistema Criogénico & Imán
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -79,7 +79,7 @@ export const HardwareMriView = () => {
         {/* Gradient & RF Details */}
         <div className="glass-panel" style={{ padding: '20px', borderRadius: '12px' }}>
           <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 16px 0', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>⚡</span> Gradientes & Amplificadores RF
+            <Zap style={{ width: 18, height: 18, color: '#f59e0b' }} /> Gradientes & Amplificadores RF
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
